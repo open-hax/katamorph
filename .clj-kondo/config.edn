@@ -1,1 +1,6 @@
-{:config-paths ["../../kondo-config/clj-kondo.exports/open-hax/kondo-config"]}
+;; Self-contained lint config. katamorph is a standalone repo — the old
+;; {:config-paths ["../../kondo-config/..."]} pointed at a monorepo sibling
+;; that no longer exists after extraction, so it silently loaded nothing.
+;; `await` is the native modern-CLJS async primitive (shadow-cljs >= 3.4.10,
+;; ^:async fns); clj-kondo does not know it without this exclusion.
+{:linters {:unresolved-symbol {:exclude [await]}}}

@@ -78,3 +78,112 @@
 (deftest assert!-throws-on-invalid
   (is (thrown? js/Error
         (schema/assert! :actor {}))))
+
+;; ── v0.2.0: new kinds ─────────────────────────────────────────────────────────
+
+(deftest infer-new-kinds-by-heuristic
+  (is (= :mcp-server (schema/infer-contract-class {:mcp-server/id "knoxx"})))
+  (is (= :mcp-server (schema/infer-contract-class {:mcp_server/id "knoxx"})))
+  (is (= :provider (schema/infer-contract-class {:provider/id :proxx})))
+  (is (= :source-mode (schema/infer-contract-class {:source-mode/id :social})))
+  (is (= :runtime-feature (schema/infer-contract-class {:runtime-feature/id "receipts"}))))
+
+(deftest validate-mcp-server-contract
+  (is (:ok (schema/validate :mcp-server
+                            {:contract/id "knoxx-mcp"
+                             :contract/kind :mcp-server
+                             :mcp-server/transport :http
+                             :mcp-server/url "http://127.0.0.1:8000/mcp"
+                             :enabled true})))
+  ;; underscore spelling routes to the same schema
+  (is (:ok (schema/validate :mcp_server
+                            {:contract/id "knoxx-mcp"
+                             :mcp_server/transport "http"
+                             :mcp_server/url "http://127.0.0.1:8000/mcp"}))))
+
+(deftest validate-provider-contract
+  (is (:ok (schema/validate :provider
+                            {:provider/id :proxx
+                             :provider/label "Proxx"
+                             :provider/base-url "http://127.0.0.1:8789"
+                             :provider/api-shape :openai-chat
+                             :provider/auth {:auth/mode :bearer :auth/env "PROXX_TOKEN"}
+                             :provider/models-endpoint "/v1/models"
+                             :provider/model-prefix-allowlist ["glm-5" "gpt-5"]})))
+  (is (not (:ok (schema/validate :provider {:provider/label "no id"}))))
+  (is (not (:ok (schema/validate :provider
+                                 {:provider/id :p
+                                  :provider/auth {:auth/env "X"}})))))
+
+(deftest validate-source-mode-and-runtime-feature
+  (is (:ok (schema/validate :source-mode
+                            {:contract/kind :source-mode
+                             :contract/id "social-replies"
+                             :source-mode/id :social})))
+  (is (:ok (schema/validate :runtime-feature
+                            {:contract/kind :runtime-feature
+                             :contract/id "receipt-river"
+                             :eta-mu/extension :receipt-river
+                             :enabled true}))))
+
+(deftest validate-cms-contract
+  (is (:ok (schema/validate :cms-templates
+                            {:contract/id "site-templates"
+                             :contract/kind :cms-templates
+                             :templates {}})))
+  (is (not (:ok (schema/validate :cms-templates
+                                 {:contract/id "bad" :contract/kind :not-cms})))))
+
+;; ── v0.2.0: dialect tolerance (knoxx/sol disk contracts) ──────────────────────
+
+(deftest validate-flat-sub-agent-dialect
+  ;; sol/knoxx flat form: no :parent-agent, :sub-agent/* fields, string role.
+  (is (:ok (schema/validate :sub-agent
+                            {:contract/id "test_sub_agent"
+                             :contract/kind :sub-agent
+                             :sub-agent/parent-capabilities :restrict
+                             :sub-agent/capabilities [:read :semantic_query]
+                             :sub-agent/model "gpt-4o"
+                             :sub-agent/thinking "medium"
+                             :sub-agent/role "researcher"
+                             :sub-agent/timeout-ms 30000
+                             :sub-agent/mode :await
+                             :agent {:role "researcher" :model "gpt-4o" :thinking "medium"}}))))
+
+(deftest validate-flat-policy-dialect
+  ;; knoxx/sol flat policy: string id, invariant check maps, no :policy/outcome.
+  (is (:ok (schema/validate :policy
+                            {:contract/id "review-gate"
+                             :contract/kind :policy
+                             :policy/invariants [{:id "no-force-push"
+                                                  :severity :block
+                                                  :message "force push blocked"
+                                                  :check {:rule :git/force-push}}]
+                             :policy/checked-by :review})))
+  ;; proxx tree dialect still validates
+  (is (:ok (schema/validate :policy
+                            {:contract/id :route-policy
+                             :contract/kind :policy
+                             :policy/outcome :apply})))
+  ;; regression: :policy/children recursion resolves without external
+  ;; registry options (was a latent :malli.core/invalid-ref until v0.2.0)
+  (is (:ok (schema/validate :policy
+                            {:contract/id :parent
+                             :contract/kind :policy
+                             :policy/outcome :apply
+                             :policy/children [{:contract/id :child
+                                                :contract/kind :policy
+                                                :policy/outcome :block}]}))))
+
+(deftest validate-tolerant-agent-dialect
+  ;; sol agent dialect: actors as a set with wildcard, string roles, ui actions.
+  (is (:ok (schema/validate :agent
+                            {:contract/id "ussyverse_social_replies"
+                             :contract/kind :agent
+                             :contract/actors #{"*"}
+                             :actor/roles [:social]
+                             :agent {:role "poster"}
+                             :ui/actions [{:id "reply" :label "Reply"}]}))))
+
+(deftest validate-page-actor
+  (is (:ok (schema/validate :actor {:actor/id "landing" :actor/kind :page}))))

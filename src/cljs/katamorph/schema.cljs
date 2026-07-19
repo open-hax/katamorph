@@ -59,10 +59,10 @@
 
 (def AgentSpec
   [:map {:closed false}
-   [:role     {:optional true} keyword?]
-   [:roles    {:optional true} [:sequential keyword?]]
-   [:model    {:optional true} string?]
-   [:thinking {:optional true} keyword?]])
+   [:role     {:optional true} [:or keyword? string?]]
+   [:roles    {:optional true} [:sequential [:or keyword? string?]]]
+   [:model    {:optional true} [:maybe string?]]
+   [:thinking {:optional true} [:or keyword? string?]]])
 
 (def ActorCapSpec
   [:map {:closed false}
@@ -83,6 +83,25 @@
     [:hydration {:optional true} [:map {:closed false}]]
     [:source/hydration {:optional true} [:map {:closed false}]]]])
 
+(def UiAction
+  "Declarative UI action a surface can render for a contract (knoxx/sol heritage)."
+  [:map {:closed false}
+   [:id string?]
+   [:label string?]
+   [:kind {:optional true} [:or keyword? string?]]
+   [:surface {:optional true} [:or keyword? string?]]
+   [:surfaces {:optional true} [:sequential [:or keyword? string?]]]
+   [:icon {:optional true} string?]
+   [:intent {:optional true} [:or keyword? string?]]
+   [:agent/contract {:optional true} string?]
+   [:agent/actor {:optional true} string?]
+   [:tool/id {:optional true} string?]
+   [:media/from {:optional true} [:or keyword? string?]]
+   [:requires {:optional true} [:sequential [:or keyword? string?]]]
+   [:mode {:optional true} [:or keyword? string?]]
+   [:confirm? {:optional true} boolean?]
+   [:enabled? {:optional true} boolean?]])
+
 (def SubAgentConfig
   "Configuration for how a sub-agent relates to its parent."
   [:map {:closed false}
@@ -94,40 +113,56 @@
    [:result-key  {:optional true} string?]])
 
 (def AgentContract
+  "Agent contract. Doubles as the lenient fallback schema for unrecognized
+   contract maps (sol/knoxx heritage), so :contract/kind is any keyword and
+   actor bindings tolerate sets, sequences, and the \"*\" wildcard."
   [:map {:closed false}
    [:contract/id      string?]
-   [:contract/kind    [:= :agent]]
-   [:contract/actors  {:optional true} [:vector string?]]
+   [:contract/kind    {:optional true} keyword?]
+   [:contract/actor   {:optional true} string?]
+   [:contract/actors  {:optional true} [:or [:set string?] [:sequential string?]]]
+   [:actor/id         {:optional true} string?]
+   [:actor/roles      {:optional true} [:sequential keyword?]]
+   [:actor/capabilities {:optional true} [:sequential keyword?]]
    [:enabled          {:optional true} :boolean]
    [:trigger-kind     {:optional true} keyword?]
    [:agent            {:optional true} AgentSpec]
    [:actor            {:optional true} ActorCapSpec]
    [:prompts          {:optional true}
     [:map {:closed false}
-     [:system {:optional true} string?]
-     [:task   {:optional true} string?]]]
+     [:system {:optional true} :any]
+     [:task   {:optional true} :any]]]
    [:memory           {:optional true} [:map {:closed false}]]
    [:sources          {:optional true} [:sequential RuntimeSourceRef]]
    [:context          {:optional true} ContextPolicy]
    [:context-policy   {:optional true} ContextPolicy]
+   [:ui/actions       {:optional true} [:vector UiAction]]
    [:data             {:optional true} [:map {:closed false}]]])
 
 (def SubAgentContract
   "A sub-agent contract: a child agent spawned by a parent.
-   Links to its parent via :parent-agent and declares delegation config."
+   Two dialects validate: the linked form (:parent-agent + :sub-agent/config)
+   and the flat sol/knoxx form (:sub-agent/* fields, no parent link)."
   [:map {:closed false}
    [:contract/id      string?]
    [:contract/kind    [:= :sub-agent]]
    [:contract/actors  {:optional true} [:vector string?]]
-   [:parent-agent     string?]
+   [:parent-agent     {:optional true} string?]
    [:sub-agent/config {:optional true} SubAgentConfig]
+   [:sub-agent/parent-capabilities {:optional true} [:enum :inherit :restrict :none]]
+   [:sub-agent/capabilities {:optional true} [:vector any?]]
+   [:sub-agent/role   {:optional true} string?]
+   [:sub-agent/model  {:optional true} [:maybe string?]]
+   [:sub-agent/thinking {:optional true} [:or keyword? string?]]
+   [:sub-agent/timeout-ms {:optional true} int?]
+   [:sub-agent/mode   {:optional true} [:enum :fire-and-forget :await :collect]]
    [:enabled          {:optional true} :boolean]
    [:agent            {:optional true} AgentSpec]
    [:actor            {:optional true} ActorCapSpec]
    [:prompts          {:optional true}
     [:map {:closed false}
-     [:system {:optional true} string?]
-     [:task   {:optional true} string?]]]
+     [:system {:optional true} :any]
+     [:task   {:optional true} :any]]]
    [:memory           {:optional true} [:map {:closed false}]]
    [:sources          {:optional true} [:sequential RuntimeSourceRef]]
    [:context          {:optional true} ContextPolicy]
@@ -139,7 +174,7 @@
 (def ActorContract
   [:map {:closed false}
    [:actor/id            string?]
-   [:actor/kind          [:enum :agent :user]]
+   [:actor/kind          [:enum :agent :user :page]]
    [:actor/email         {:optional true} string?]
    [:actor/username      {:optional true} string?]
    [:actor/accounts      {:optional true}
@@ -162,7 +197,8 @@
    [:actor/roles         {:optional true} [:sequential keyword?]]
    [:actor/capabilities  {:optional true} [:sequential keyword?]]
    [:actor/sources       {:optional true} [:sequential RuntimeSourceRef]]
-   [:sources             {:optional true} [:sequential RuntimeSourceRef]]])
+   [:sources             {:optional true} [:sequential RuntimeSourceRef]]
+   [:ui/actions          {:optional true} [:vector UiAction]]])
 
 ;; ── Role contract (knoxx heritage) ────────────────────────────────────────────
 
@@ -177,9 +213,9 @@
    [:sources           {:optional true} [:sequential RuntimeSourceRef]]
    [:prompts           {:optional true}
     [:map {:closed false}
-     [:system {:optional true} string?]
-     [:task   {:optional true} string?]]]
-   [:role/system-prompt {:optional true} string?]])
+     [:system {:optional true} :any]
+     [:task   {:optional true} :any]]]
+   [:role/system-prompt {:optional true} :any]])
 
 ;; ── Capability contract (knoxx heritage) ──────────────────────────────────────
 
@@ -195,31 +231,37 @@
 (def CapabilityContract
   [:map {:closed false}
    [:cap/id           keyword?]
-   [:cap/tools        {:optional true} [:vector any?]]
+   [:cap/tools        {:optional true} [:sequential any?]]
    [:cap/user-surfaces {:optional true} [:vector UserSurface]]])
 
 ;; ── Policy contract (proxx heritage — tree-shaped) ────────────────────────────
 
-(declare PolicyContract*)
-
 (def PolicyContract
-  "Tree-shaped policy with conditions, filters, outcomes, children."
-  [:map {:closed false}
-   [:contract/id      :keyword]
-   [:contract/kind    [:= :policy]]
-   [:contract/doc     {:optional true} :string]
-   [:contract/scope   {:optional true} :string]
-   [:contract/uses    {:optional true} [:vector ContractId]]
-   [:policy/condition {:optional true} EvalNode]
-   [:policy/filters   {:optional true} [:vector EvalNode]]
-   [:policy/outcome   PolicyOutcome]
-   [:policy/strategy  {:optional true} :symbol]
-   [:policy/children  {:optional true} [:vector [:ref :unified/policy]]]
-   [:policy/sort      {:optional true} EvalNode]
-   [:policy/project   {:optional true} [:vector :map]]
-   [:policy/invariants {:optional true} [:vector :map]]
-   [:policy/required  {:optional true} [:vector :map]]
-   [:enabled          {:optional true} :boolean]])
+  "Policy contract. Two dialects validate: the proxx tree shape (conditions,
+   filters, :policy/outcome, children) and the knoxx/sol flat shape
+   (:policy/invariants + :policy/required check maps, no outcome).
+   Self-contained: :policy/children recurses through a local malli registry,
+   so the schema validates without external registry options."
+  [:schema {:registry
+            {::policy
+             [:map {:closed false}
+              [:contract/id      ContractId]
+              [:contract/kind    [:= :policy]]
+              [:contract/doc     {:optional true} :string]
+              [:contract/scope   {:optional true} :string]
+              [:contract/uses    {:optional true} [:vector ContractId]]
+              [:policy/condition {:optional true} EvalNode]
+              [:policy/filters   {:optional true} [:vector EvalNode]]
+              [:policy/outcome   {:optional true} PolicyOutcome]
+              [:policy/checked-by {:optional true} keyword?]
+              [:policy/strategy  {:optional true} :symbol]
+              [:policy/children  {:optional true} [:vector [:ref ::policy]]]
+              [:policy/sort      {:optional true} EvalNode]
+              [:policy/project   {:optional true} [:vector :map]]
+              [:policy/invariants {:optional true} [:vector :map]]
+              [:policy/required  {:optional true} [:vector :map]]
+              [:enabled          {:optional true} :boolean]]}}
+   ::policy])
 
 ;; ── Policy gate contract (eta-mu v2 heritage — flat tool-call gating) ─────────
 
@@ -439,6 +481,91 @@
    [:source/projection {:optional true} [:map {:closed false}]]
    [:source/backpressure {:optional true} [:map {:closed false}]]])
 
+;; ── MCP server contract (knoxx/sol heritage) ──────────────────────────────────
+
+(def McpServerContract
+  "MCP gateway server declared as data. Both :mcp-server/* and :mcp_server/*
+   key spellings are tolerated (disk contracts use either)."
+  [:map {:closed false}
+   [:contract/kind {:optional true} [:or keyword? string?]]
+   [:contract/id string?]
+   [:mcp-server/id {:optional true} string?]
+   [:mcp_server/id {:optional true} string?]
+   [:mcp-server/transport {:optional true} [:or keyword? string?]]
+   [:mcp_server/transport {:optional true} [:or keyword? string?]]
+   [:mcp-server/url {:optional true} string?]
+   [:mcp_server/url {:optional true} string?]
+   [:enabled {:optional true} :boolean]])
+
+;; ── Source-mode contract (knoxx/sol heritage) ─────────────────────────────────
+
+(def SourceModeContract
+  "Source-mode contracts document how event runtime source modes transform
+   upstream source records into template context and runtime dispatch behavior."
+  [:map {:closed false}
+   [:contract/kind [:= :source-mode]]
+   [:contract/id ContractId]
+   [:source-mode/id {:optional true} keyword?]
+   [:source/kind {:optional true} [:or keyword? string?]]
+   [:source/mode {:optional true} [:or keyword? string?]]
+   [:prompts {:optional true} [:map {:closed false}
+                               [:system {:optional true} :any]
+                               [:task {:optional true} :any]]]
+   [:data {:optional true} [:map {:closed false}]]])
+
+;; ── Runtime feature contract (knoxx/sol heritage) ─────────────────────────────
+
+(def RuntimeFeatureContract
+  "Non-agent runtime toggles (e.g. eta-mu extensions) managed as contract data
+   instead of ad-hoc JSON state."
+  [:map {:closed false}
+   [:contract/kind [:= :runtime-feature]]
+   [:contract/id string?]
+   [:runtime-feature/id {:optional true} string?]
+   [:runtime/owner {:optional true} [:or keyword? string?]]
+   [:runtime/feature {:optional true} [:or keyword? string?]]
+   [:eta-mu/extension {:optional true} [:or keyword? string?]]
+   [:enabled {:optional true} :boolean]
+   [:runtime/enabled {:optional true} :boolean]
+   [:runtime/default-enabled {:optional true} :boolean]
+   [:runtime/applies-to {:optional true} [:sequential [:map {:closed false}]]]
+   [:runtime/config {:optional true} [:map {:closed false}]]])
+
+;; ── CMS contract (knoxx/sol heritage) ─────────────────────────────────────────
+
+(def CmsContract
+  "Folder-backed visual CMS records. Domain payload (:blocks or :templates)
+   stays top-level so existing CMS editor file readers remain compatible."
+  [:map {:closed false}
+   [:contract/id string?]
+   [:contract/kind [:enum :cms-block-registry :cms-templates :cms-template-registry]]
+   [:enabled {:optional true} :boolean]
+   [:blocks {:optional true} [:map {:closed false}]]
+   [:templates {:optional true} [:map {:closed false}]]])
+
+;; ── Provider contract (new in v0.2.0) ─────────────────────────────────────────
+
+(def ProviderContract
+  "LLM provider gateway declared as data: identity, endpoint, API shape, auth
+   mode. :auth/env names an environment VARIABLE, never a secret value —
+   secrets do not belong in contract data."
+  [:map {:closed false}
+   [:provider/id keyword?]
+   [:contract/kind {:optional true} [:= :provider]]
+   [:contract/id {:optional true} ContractId]
+   [:provider/label {:optional true} string?]
+   [:provider/base-url {:optional true} string?]
+   [:provider/api-shape {:optional true}
+    [:enum :openai-chat :openai-responses :anthropic-messages]]
+   [:provider/auth {:optional true}
+    [:map {:closed false}
+     [:auth/mode [:enum :none :bearer :api-key :basic]]
+     [:auth/env {:optional true} string?]
+     [:auth/header {:optional true} string?]]]
+   [:provider/models-endpoint {:optional true} string?]
+   [:provider/model-prefix-allowlist {:optional true} [:sequential string?]]
+   [:enabled {:optional true} :boolean]])
+
 ;; ── Registry ──────────────────────────────────────────────────────────────────
 
 (def registry
@@ -475,6 +602,18 @@
    :model-family ModelFamilyContract
    :model        ModelContract
 
+   ;; Provider gateway (v0.2.0)
+   :provider     ProviderContract
+
+   ;; Runtime surfaces (knoxx/sol)
+   :mcp-server      McpServerContract
+   :mcp_server      McpServerContract
+   :source-mode     SourceModeContract
+   :runtime-feature RuntimeFeatureContract
+   :cms-block-registry    CmsContract
+   :cms-templates         CmsContract
+   :cms-template-registry CmsContract
+
    ;; Data ingestion (knoxx)
    :ingest_source IngestSourceContract})
 
@@ -494,10 +633,15 @@
     (contains? value :actor/id)               :actor
     (contains? value :role/id)                :role
     (contains? value :cap/id)                 :capability
+    (or (contains? value :mcp-server/id)
+        (contains? value :mcp_server/id))     :mcp-server
     (contains? value :model/id)               :model
     (contains? value :model-family/id)        :model-family
+    (contains? value :provider/id)            :provider
     (contains? value :generator/id)           :generator
     (contains? value :schedule/id)            :schedule
+    (contains? value :source-mode/id)         :source-mode
+    (contains? value :runtime-feature/id)     :runtime-feature
     (contains? value :parent-agent)           :sub-agent
     (contains? value :contract/id)            :agent
     :else                                     :agent))

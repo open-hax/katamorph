@@ -46,7 +46,9 @@
    [:model :model/id]
    [:model-family :model-family/id]
    [:runtime-feature :runtime-feature/id]
-   [:sub-agent :sub-agent/id]])
+   [:sub-agent :sub-agent/id]
+   [:mcp-server :mcp-server/id]
+   [:provider :provider/id]])
 
 (def kind->id-key
   (into {} kind-id-keys))
