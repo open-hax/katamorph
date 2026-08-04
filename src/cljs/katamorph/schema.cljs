@@ -427,7 +427,7 @@
 
 (def ModelFamilyContract
   [:map {:closed false}
-   [:model-family/id             string?]
+   [:model-family/id             [:or string? keyword?]]
    [:model-family/provider       {:optional true} keyword?]
    [:model-family/api            {:optional true} [:or string? keyword?]]
    [:model-family/compat         {:optional true} :map]
@@ -445,6 +445,10 @@
 (def ModelContract
   [:map {:closed false}
    [:model/id              string?]
+   [:model/family          {:optional true} [:or keyword? string?]]
+   ;; Legacy standalone contracts used :model-family/id as a reference.
+   ;; Namespace resource files reserve :K/id for registration, so new
+   ;; manifests use :model/family instead.
    [:model-family/id       {:optional true} string?]
    [:model/provider        {:optional true} keyword?]
    [:model/api             {:optional true} [:or string? keyword?]]

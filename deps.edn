@@ -1,2 +1,13 @@
-{:deps {metosin/malli {:mvn/version "0.16.4"}}
- :paths ["src/cljs"]}
+{;; shadow-cljs.edn uses :deps true, so this file is the authoritative JVM
+ ;; classpath for standalone builds and for Git-dependency consumers.
+ :paths ["src/cljs"]
+
+ :deps
+ {metosin/malli {:mvn/version "0.16.4"}}
+
+ :aliases
+ {:dev
+  {:extra-paths ["test/cljs" "examples/cljs"]
+   :extra-deps
+   {org.clojure/clojurescript {:mvn/version "1.12.145"}
+    thheller/shadow-cljs      {:mvn/version "3.4.11"}}}}}

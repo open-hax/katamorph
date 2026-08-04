@@ -1,0 +1,10 @@
+{:namespace :hello
+ :resources
+ [{:action/id :greet
+   :action/kind :demo/greet
+   :action/with {:greeting "Hello"}}
+
+  {:trigger/id :greeting-requested
+   :trigger/events [:hello/requested]
+   :trigger/action :hello/greet
+   :trigger/with {:name "Katamorph"}}]}

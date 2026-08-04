@@ -115,6 +115,15 @@
                                  {:provider/id :p
                                   :provider/auth {:auth/env "X"}})))))
 
+(deftest validate-model-catalog-contracts
+  (is (:ok (schema/validate :model-family
+                            {:model-family/id :gpt
+                             :model-family/prefixes ["gpt-"]})))
+  (is (:ok (schema/validate :model
+                            {:model/id "gpt-5"
+                             :model/family :open-hax/gpt
+                             :model/provider :open-hax/proxx}))))
+
 (deftest validate-source-mode-and-runtime-feature
   (is (:ok (schema/validate :source-mode
                             {:contract/kind :source-mode

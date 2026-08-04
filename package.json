@@ -1,18 +1,20 @@
 {
   "name": "@open-hax/katamorph",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "license": "LGPL-3.0-or-later",
   "type": "module",
-  "description": "katamorph \u2014 the contract/resource runtime: manifest grammar, action interpreter, store protocol + registries (memory/mongo), driver/condition/filter registries, agent utils. Data as interpreter.",
+  "description": "Portable contract schemas, resource manifests, laws, and pure interpreters for data-described runtimes.",
   "scripts": {
     "build": "shadow-cljs release lib",
+    "examples": "shadow-cljs compile examples && node dist/examples.cjs",
     "test": "shadow-cljs compile test && node dist/test.cjs",
+    "verify": "pnpm lint:kondo && pnpm test && pnpm examples && pnpm build",
     "watch": "shadow-cljs watch test",
-    "lint": "clj-kondo --lint src test",
-    "lint:kondo": "clj-kondo --lint src/cljs test/cljs"
+    "lint": "clj-kondo --lint src test examples/cljs",
+    "lint:kondo": "clj-kondo --lint src/cljs test/cljs examples/cljs"
   },
   "devDependencies": {
-    "shadow-cljs": "^3.4.11"
+    "shadow-cljs": "3.4.11"
   }
 }

@@ -1,5 +1,4 @@
-{:source-paths ["src/cljs" "test/cljs"]
- :dependencies [[metosin/malli "0.16.4"]]
+{:deps {:aliases [:dev]}
  :nrepl {:port 9001}
  :builds
  {:test
@@ -7,11 +6,18 @@
    ;; .cjs so node runs it as CommonJS under this package's "type":"module".
    :output-to "dist/test.cjs"
    :ns-regexp "-test$"
-   :autorun true}
+   :autorun false}
 
-  ;; katamorph is consumed via CLJS source-path by other packages, so this esm
-  ;; build is for external JS consumers. It exports the manifest grammar — the
-  ;; package's front door ("data as interpreter": namespace file -> resources).
+  :examples
+  {:target :node-script
+   :output-to "dist/examples.cjs"
+   :main katamorph.examples.runner/main
+   :compiler-options {:output-feature-set :es-next}}
+
+  ;; katamorph is consumed as CLJS source through a tools.deps Git dependency,
+  ;; so this esm build is for external JS consumers. It exports the manifest
+  ;; grammar — the package's front door ("data as interpreter": namespace file
+  ;; -> resources).
   ;; (esm :exports is a map of name->var, never a set of namespaces.)
   :lib
   {:target :esm

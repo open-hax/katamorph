@@ -64,3 +64,13 @@
         (is (= :store (:contract/kind s)))
         (is (= "ussyverse/observed-messages" (:contract/id s)))
         (is (nil? (:trigger/kind s)) "store does not get the trigger default")))))
+
+(deftest model-family-reference-does-not-register-a-second-resource
+  (let [defs (m/namespace-file-definitions
+              {:namespace :open-hax
+               :resources [{:model/id "gpt-5"
+                            :model/family :open-hax/gpt
+                            :model/provider :open-hax/proxx}]})]
+    (is (= [:model] (mapv :resource/kind defs)))
+    (is (= :open-hax/gpt
+           (get-in defs [0 :resource/definition :model/family])))))
