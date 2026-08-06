@@ -196,3 +196,79 @@
 
 (deftest validate-page-actor
   (is (:ok (schema/validate :actor {:actor/id "landing" :actor/kind :page}))))
+
+;; ── Workflow resource ─────────────────────────────────────────────────────────
+
+(def ^:private minimal-workflow
+  {:contract/kind :workflow
+   :contract/id "main-pr-gate"
+   :workflow/name "eta-mu-main-pr-gate"
+   :workflow/triggers [{:on/event :pull-request
+                        :on/branches ["main"]
+                        :on/paths [".github/workflows/*.yml"]}]
+   :workflow/jobs
+   [{:job/id "lint"
+     :job/runner :ubuntu-latest
+     :job/permissions {:contents :read}
+     :job/timeout-minutes 20
+     :job/steps [{:step/action :actions/checkout
+                  :step/with {:persist-credentials false}}
+                 {:step/run "pnpm lint"}]}]})
+
+(deftest workflow-kind-is-registered
+  (is (some? (schema/schema-for :workflow)))
+  (is (= :workflow (schema/infer-contract-class {:contract/kind :workflow})))
+  (is (= :workflow (schema/infer-contract-class {:workflow/id "ci"}))
+      "a bare :workflow/id infers the kind, like :schedule/id and :generator/id"))
+
+(deftest validate-minimal-workflow
+  (is (:ok (schema/validate :workflow minimal-workflow))))
+
+(deftest workflow-requires-jobs
+  (is (not (:ok (schema/validate :workflow (dissoc minimal-workflow :workflow/jobs))))
+      "a workflow with no jobs describes no work and must not validate"))
+
+(deftest workflow-job-requires-an-id-and-steps
+  (is (not (:ok (schema/validate :workflow
+                                 (assoc minimal-workflow :workflow/jobs [{:job/steps []}]))))
+      "a job without :job/id cannot be referenced by :job/needs")
+  (is (not (:ok (schema/validate :workflow
+                                 (assoc minimal-workflow :workflow/jobs [{:job/id "a"}]))))
+      "a job without :job/steps runs nothing"))
+
+(deftest workflow-carries-a-job-dag
+  (is (:ok (schema/validate
+            :workflow
+            (assoc minimal-workflow :workflow/jobs
+                   [{:job/id "a" :job/steps [{:step/run "true"}]}
+                    {:job/id "b" :job/needs ["a"] :job/steps [{:step/run "true"}]}])))
+      "no other kind carries dependency ordering; :job/needs is why this schema exists"))
+
+(deftest workflow-permissions-are-capability-shaped
+  (is (:ok (schema/validate
+            :workflow
+            (assoc minimal-workflow :workflow/permissions {:contents :read :pull-requests :write})))
+      "permissions are namespaced keywords, not a host's YAML block")
+  (is (not (:ok (schema/validate
+                 :workflow
+                 (assoc minimal-workflow :workflow/permissions {"contents" "read"}))))
+      "string keys are a host dialect and belong in :workflow/raw"))
+
+(deftest workflow-keeps-host-expressions-opaque
+  (is (:ok (schema/validate
+            :workflow
+            (assoc-in minimal-workflow [:workflow/jobs 0 :job/if]
+                      "${{ github.event_name == 'push' }}")))
+      "Katamorph does not evaluate host expressions; it carries them as strings"))
+
+(deftest workflow-has-a-raw-escape-hatch
+  (is (:ok (schema/validate
+            :workflow
+            (assoc minimal-workflow :workflow/raw {:github-actions {:defaults {:run {:shell "bash"}}}})))
+      "a language that cannot express the last five percent gets abandoned"))
+
+(deftest workflow-matrix-is-not-strategy-contract
+  (is (:ok (schema/validate
+            :workflow
+            (assoc-in minimal-workflow [:workflow/jobs 0 :job/matrix] {:node [20 22]})))
+      "StrategyContract already means a retry policy; a matrix must not reuse it"))
