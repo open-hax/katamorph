@@ -382,6 +382,87 @@
    [:enabled           {:optional true} :boolean]
    [:data              {:optional true} :map]])
 
+;; ── Workflow contract ────────────────────────────────────────────────────────
+;;
+;; A workflow is a resource like any other: an identity, a set of triggers, and
+;; an ordered graph of jobs whose steps are actions. It describes *what runs and
+;; when*; it does not name a host. Interpreting one for a CI provider, for a
+;; local runner, or for a work-coordination board are all projections of the
+;; same resource — which is the point of putting it here rather than in any one
+;; of them.
+;;
+;; Deliberately absent: an expression language. Host expressions (GitHub's
+;; `${{ }}`, for instance) travel as opaque strings in :step/if and friends.
+;; Katamorph does not evaluate them and must not pretend to.
+
+(def WorkflowRunner
+  "Where a job runs. A keyword is a portable class a target resolves; a string is
+   a host-specific label passed through untouched."
+  [:or keyword? string?])
+
+(def WorkflowStep
+  [:map {:closed false}
+   [:step/id      {:optional true} ContractId]
+   [:step/name    {:optional true} string?]
+   ;; Exactly one of :step/run or :step/action is expected. Kept as separate
+   ;; optional keys rather than a variant so a target can report which it got.
+   [:step/run     {:optional true} string?]
+   [:step/action  {:optional true} [:or keyword? string?]]
+   [:step/with    {:optional true} [:map {:closed false}]]
+   [:step/env     {:optional true} [:map {:closed false}]]
+   [:step/if      {:optional true} [:or string? EvalNode]]
+   [:step/working-directory {:optional true} string?]
+   [:step/continue-on-error {:optional true} :boolean]
+   [:step/timeout-minutes   {:optional true} int?]])
+
+(def WorkflowJob
+  [:map {:closed false}
+   [:job/id       ContractId]
+   [:job/name     {:optional true} string?]
+   [:job/runner   {:optional true} WorkflowRunner]
+   ;; The dependency edge. Job ordering is a DAG, and no other katamorph kind
+   ;; carries one — hence a first-class key rather than a reused policy field.
+   [:job/needs    {:optional true} [:sequential ContractId]]
+   [:job/if       {:optional true} [:or string? EvalNode]]
+   [:job/matrix   {:optional true} [:map-of keyword? [:sequential :any]]]
+   ;; A capability grant, expressed the way capabilities already are elsewhere:
+   ;; namespaced keywords. `{:contents :read}` rather than a host's YAML block.
+   [:job/permissions {:optional true} [:map-of keyword? keyword?]]
+   [:job/timeout-minutes {:optional true} int?]
+   [:job/env      {:optional true} [:map {:closed false}]]
+   [:job/steps    [:sequential WorkflowStep]]])
+
+(def WorkflowTrigger
+  "One reason a workflow runs. `:on/event` reuses the trigger vocabulary; a
+   cron trigger carries `:on/cron` the way ScheduleContract does."
+  [:map {:closed false}
+   [:on/event     {:optional true} [:or keyword? string?]]
+   [:on/cron      {:optional true} string?]
+   [:on/branches  {:optional true} [:sequential string?]]
+   [:on/paths     {:optional true} [:sequential string?]]
+   [:on/types     {:optional true} [:sequential [:or keyword? string?]]]
+   [:on/inputs    {:optional true} [:map {:closed false}]]
+   [:on/with      {:optional true} [:map {:closed false}]]])
+
+(def WorkflowContract
+  [:map {:closed false}
+   [:contract/kind [:= :workflow]]
+   [:contract/id   ContractId]
+   [:workflow/id   {:optional true} ContractId]
+   [:workflow/name {:optional true} string?]
+   [:workflow/doc  {:optional true} string?]
+   [:workflow/triggers   {:optional true} [:sequential WorkflowTrigger]]
+   [:workflow/permissions {:optional true} [:map-of keyword? keyword?]]
+   [:workflow/concurrency {:optional true} [:map {:closed false}]]
+   [:workflow/env  {:optional true} [:map {:closed false}]]
+   [:workflow/jobs [:sequential WorkflowJob]]
+   ;; Host-specific material a target may pass through verbatim, keyed by target
+   ;; id. An escape hatch is required: a workflow language that cannot express
+   ;; the last five percent gets abandoned for the YAML it replaced.
+   [:workflow/raw  {:optional true} [:map-of keyword? :any]]
+   [:enabled       {:optional true} :boolean]
+   [:data          {:optional true} :map]])
+
 ;; ── Runtime source contract (knoxx) ──────────────────────────────────────────
 
 (def SourceEmission
@@ -600,6 +681,7 @@
    :namespace    NamespaceFile
    :generator    GeneratorContract
    :schedule     ScheduleContract
+   :workflow     WorkflowContract
    :source       RuntimeSourceContract
 
    ;; Model catalog (merged)
@@ -644,6 +726,7 @@
     (contains? value :provider/id)            :provider
     (contains? value :generator/id)           :generator
     (contains? value :schedule/id)            :schedule
+    (contains? value :workflow/id)            :workflow
     (contains? value :source-mode/id)         :source-mode
     (contains? value :runtime-feature/id)     :runtime-feature
     (contains? value :parent-agent)           :sub-agent
