@@ -54,5 +54,5 @@
       [:not
        [:map {:closed true}
         [:condition/op [:= :not]]
-        [:condition/clause [:ref ::condition]]]]]]}}
+        [:condition/clause [:ref ::condition]]]]]}}
    ::condition])
