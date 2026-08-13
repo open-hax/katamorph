@@ -11,7 +11,9 @@
    discriminator. Maps use {:closed false} to tolerate dialect-specific fields."
   (:require [malli.core :as m]
             [malli.error :as me]
-            [malli.transform :as mt]))
+            [malli.transform :as mt]
+            [katamorph.schema.action :as action]
+            [katamorph.schema.step :as step]))
 
 ;; ── Primitives ────────────────────────────────────────────────────────────────
 
@@ -300,21 +302,29 @@
 
 ;; ── Action contract (knoxx heritage) ──────────────────────────────────────────
 
+;; The typed port keys come from katamorph.schema.action so the registered kind
+;; and the portable ActionSemantics stay one definition. Category is optional
+;; here and made mandatory by PortedActionLaw only once ports are declared —
+;; knoxx actions predating the vocabulary keep validating unchanged.
+
 (def ActionContract
-  [:map {:closed false}
-   [:contract/kind   [:= :action]]
-   [:contract/id     ContractId]
-   [:action/id       {:optional true} ContractId]
-   [:action/kind     {:optional true} keyword?]
-   [:action/handler  {:optional true} :string]
-   [:action/fn       {:optional true} :any]
-   [:action/with     {:optional true} [:map {:closed false}]]
-   [:action/scope    {:optional true} :map]
-   [:enabled         {:optional true} :boolean]
-   [:data            {:optional true}
-    [:map {:closed false}
-     [:context {:optional true} :map]
-     [:output  {:optional true} :map]]]])
+  [:and
+   (into [:map {:closed false}
+          [:contract/kind   [:= :action]]
+          [:contract/id     ContractId]
+          [:action/id       {:optional true} ContractId]
+          [:action/kind     {:optional true} keyword?]
+          [:action/handler  {:optional true} :string]
+          [:action/fn       {:optional true} :any]
+          [:action/with     {:optional true} [:map {:closed false}]]
+          [:action/scope    {:optional true} :map]
+          [:enabled         {:optional true} :boolean]
+          [:data            {:optional true}
+           [:map {:closed false}
+            [:context {:optional true} :map]
+            [:output  {:optional true} :map]]]]
+         action/PortKeys)
+   action/PortedActionLaw])
 
 ;; ── Store resource (resource architecture) ────────────────────────────────────
 
@@ -409,6 +419,9 @@
    [:step/run     {:optional true} string?]
    [:step/action  {:optional true} [:or keyword? string?]]
    [:step/with    {:optional true} [:map {:closed false}]]
+   ;; Dataflow, not config: each entry names an upstream step's output. Typed
+   ;; from katamorph.schema.step so a bare vector cannot pass as a reference.
+   [:step/in      {:optional true} step/StepInputs]
    [:step/env     {:optional true} [:map {:closed false}]]
    [:step/if      {:optional true} [:or string? EvalNode]]
    [:step/working-directory {:optional true} string?]

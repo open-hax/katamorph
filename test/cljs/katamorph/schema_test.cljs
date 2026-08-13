@@ -272,3 +272,50 @@
             :workflow
             (assoc-in minimal-workflow [:workflow/jobs 0 :job/matrix] {:node [20 22]})))
       "StrategyContract already means a retry policy; a matrix must not reuse it"))
+
+;; ── Typed ports and step dataflow through the registered kinds ────────────────
+;; These exercise schema/validate rather than the portable schemas directly. A
+;; constraint only reachable by naming ActionSemantics or ActionStep is not a
+;; constraint any consumer of the documented API is subject to.
+
+(def ^:private ported-action
+  {:contract/kind :action
+   :contract/id :translate
+   :action/category :transduction
+   :action/requires {:source :any}
+   :action/provides {:candidate :any}
+   :action/traits #{:generative :lossy}})
+
+(deftest registered-action-accepts-typed-ports
+  (is (:ok (schema/validate :action ported-action))))
+
+(deftest registered-action-rejects-malformed-ports
+  (is (not (:ok (schema/validate :action (assoc ported-action :action/requires "source"))))
+      ":action/requires is a port map, not a name")
+  (is (not (:ok (schema/validate :action (assoc ported-action :action/provides [:candidate]))))
+      ":action/provides is a port map, not a list of port names")
+  (is (not (:ok (schema/validate :action (assoc ported-action :action/traits [:lossy]))))
+      "traits are a set; a vector admits duplicates and implies order"))
+
+(deftest registered-action-requires-category-alongside-ports
+  (is (not (:ok (schema/validate :action (dissoc ported-action :action/category))))
+      "ports without a category describe a flow nothing can classify"))
+
+(deftest actions-predating-ports-still-validate
+  (is (:ok (schema/validate :action {:contract/kind :action
+                                     :contract/id :knoxx/dispatch
+                                     :action/kind :handler
+                                     :action/handler "dispatch"}))
+      "the port vocabulary is opt-in; knoxx heritage actions declare none"))
+
+(deftest registered-workflow-enforces-step-dataflow
+  (let [with-step-in (fn [in]
+                       (assoc-in minimal-workflow
+                                 [:workflow/jobs 0 :job/steps 0 :step/in] in))]
+    (is (:ok (schema/validate :workflow
+                              (with-step-in {:candidate [:step :translate :candidate]}))))
+    (is (not (:ok (schema/validate :workflow
+                                   (with-step-in {:candidate [:translate :candidate]}))))
+        "a bare pair is not a step reference and must not pass as dataflow")
+    (is (not (:ok (schema/validate :workflow (with-step-in {:candidate "translate"}))))
+        "a string names no output of any step")))
