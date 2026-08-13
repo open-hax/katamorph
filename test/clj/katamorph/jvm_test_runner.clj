@@ -2,12 +2,14 @@
   (:require [clojure.test :as test]
             [katamorph.condition-test]
             [katamorph.condition.path-test]
+            [katamorph.schema.condition-test]
             [katamorph.schema.registry-test]
             [katamorph.schema.validation-test]))
 
 (defn -main [& _]
   (let [result (test/run-tests 'katamorph.schema.registry-test
                                'katamorph.schema.validation-test
+                               'katamorph.schema.condition-test
                                'katamorph.condition.path-test
                                'katamorph.condition-test)]
     (when (pos? (+ (:fail result) (:error result)))

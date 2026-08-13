@@ -3,6 +3,37 @@
 (def PathSegment
   [:or keyword? string? int?])
 
+(def max-safe-integer
+  "2^53 - 1. Past this a JavaScript number stops representing consecutive
+   integers, so a larger integer cannot cross to ClojureScript unchanged."
+  9007199254740991)
+
+(defn portable-number?
+  "True for numbers both runtimes hold identically.
+
+   ClojureScript has one numeric type, the IEEE-754 double, so every value it
+   can produce is already representable on the JVM. The JVM is the side that
+   holds what ClojureScript cannot: ratios and BigDecimal, which have no
+   reading there at all; floats, which do not compare equal to the double they
+   widen into; and integers past the safe range, which round silently. Each of
+   those changes :eq and :in results across the boundary this kernel promises
+   is portable, so none of them is a portable value."
+  [x]
+  #?(:clj (cond
+            (instance? Double x) true
+            (or (instance? Long x)
+                (instance? Integer x)
+                (instance? Short x)
+                (instance? Byte x))
+            (<= (- max-safe-integer) (long x) max-safe-integer)
+            :else false)
+     :cljs (number? x)))
+
+(def PortableNumber
+  [:fn {:error/message (str "a portable number is a double or an integer within "
+                            "the JavaScript safe-integer range")}
+   portable-number?])
+
 (def PortableValue
   "Recursive data that can cross runtime boundaries without carrying code or host objects."
   [:schema
@@ -10,7 +41,7 @@
     {::portable-value
      [:or nil?
       boolean?
-      number?
+      PortableNumber
       string?
       keyword?
       uuid?
