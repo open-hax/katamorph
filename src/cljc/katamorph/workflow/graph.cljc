@@ -1,5 +1,17 @@
 (ns katamorph.workflow.graph)
 
+(defn- referenced-step
+  "The upstream step id a reference names, or nil when it names something else.
+
+   Only `[:step producer output]` declares a dependency. Any other reference is
+   wire's to reject, and reading its second element as a step id invents an edge
+   the workflow never declared — `[:literal :a :value]` inside step `:a` would
+   report a cycle on top of the unsupported reference that is the real fault."
+  [reference]
+  (when (and (vector? reference)
+             (= :step (first reference)))
+    (second reference)))
+
 (defn dependencies [steps]
   (let [ids (set (keep :step/id steps))]
     (into {}
@@ -7,7 +19,7 @@
                   (when-let [id (:step/id step)]
                     [id (->> (:step/in step)
                              vals
-                             (keep second)
+                             (keep referenced-step)
                              (filter ids)
                              set)])))
           steps)))

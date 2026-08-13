@@ -20,3 +20,17 @@
          (graph/blocked-by-cycle
           [{:step/id :a :step/in {:source [:step :b :out]}}
            {:step/id :b :step/in {:source [:step :a :out]}}]))))
+
+(deftest only-step-references-carry-dependencies
+  (is (= {:a #{}}
+         (graph/dependencies
+          [{:step/id :a :step/in {:source [:literal :a :value]}}]))
+      "a step id in the second slot of a non-step reference is not an edge")
+  (is (= []
+         (graph/blocked-by-cycle
+          [{:step/id :a :step/in {:source [:literal :a :value]}}]))
+      "the reference is unsupported, which is wire's finding, not a cycle")
+  (is (= {:a #{}}
+         (graph/dependencies
+          [{:step/id :a :step/in {:source :a}}]))
+      "a reference that is not a vector names no step at all"))

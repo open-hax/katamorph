@@ -84,6 +84,18 @@
     (is (= :workflow/incompatible-port-contracts
            (-> result :errors first :law/id)))))
 
+(deftest unsupported-references-do-not-also-report-a-cycle
+  (let [result (validation/validate-steps
+                actions
+                [{:step/id :translate
+                  :step/action :translate
+                  :step/in {:source [:literal :translate :value]}}])
+        law-ids (set (map :law/id (:errors result)))]
+    (is (false? (:ok result)))
+    (is (contains? law-ids :workflow/unsupported-reference))
+    (is (not (contains? law-ids :workflow/cyclic-dataflow))
+        "the step id sits in a reference kind the graph must not read as an edge")))
+
 (deftest duplicate-step-identities-are-ambiguous
   (let [result (validation/validate-steps
                 actions
