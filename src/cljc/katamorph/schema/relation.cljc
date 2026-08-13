@@ -11,7 +11,7 @@
         required-type (form/type-of required)]
     (cond
       (= provided required) true
-      (= required :any) true
+      (= required-type :any) true
 
       (= provided-type :or)
       (every? #(compatible? % required) (form/children provided))
