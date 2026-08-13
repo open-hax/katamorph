@@ -28,6 +28,15 @@
     (is (seq (:errors result)))
     (is (every? vector? (map :path (:errors result))))))
 
+(deftest diagnostics-have-stable-path-order
+  (let [schema [:map
+                [:z-field int?]
+                [:a-field string?]]
+        result (core/validate-schema schema {:z-field "bad"
+                                             :a-field 42})]
+    (is (= [[":a-field"] [":z-field"]]
+           (mapv :path (:errors result))))))
+
 (deftest unknown-kinds-fail-closed-as-data
   (let [result (core/validate schemas :unknown {})]
     (is (false? (:ok result)))

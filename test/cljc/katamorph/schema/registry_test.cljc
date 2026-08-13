@@ -26,3 +26,18 @@
          (core/compose-registries
           {:artifact [:map]}
           {:artifact [:map {:closed false}]}))))
+
+(deftest registry-composition-has-an-empty-identity
+  (is (= {:ok true :registry {} :conflicts []}
+         (core/compose-registries))))
+
+(deftest registry-composition-normalizes-schema-ids
+  (is (= [:artifact]
+         (core/registry-conflicts
+          [{"artifact" [:map]}
+           {:artifact [:map {:closed false}]}])))
+  (is (= {:ok true :registry {:artifact [:map]} :conflicts []}
+         (core/compose-registries {"artifact" [:map]})))
+  (is (= [:map]
+         (core/schema-for (:registry (core/compose-registries {"artifact" [:map]}))
+                          :artifact))))
