@@ -3,3 +3,5 @@
 .shadow-cljs/
 dist/
 node_modules/
+
+.lsp/.cache/db.transit.json
