@@ -74,3 +74,44 @@
     (is (= [:model] (mapv :resource/kind defs)))
     (is (= :open-hax/gpt
            (get-in defs [0 :resource/definition :model/family])))))
+
+;; Regression for open-hax/knoxx#227: document/garden/publication manifest
+;; entries were silently dropped because these kinds were absent from
+;; kind-id-keys, so entry-kinds never recognized :document/id, :garden/id,
+;; or :publication/id.
+(def knoxx-docs-file
+  {:namespace :knoxx.docs
+   :resources
+   [{:document/id :translation-pipeline
+     :document/title "Translation Pipeline"
+     :document/source-locale :en
+     :document/source {:path "docs/translation-pipeline.md"}}
+
+    {:garden/id :promethean
+     :garden/title "Promethean"
+     :garden/status :active}
+
+    {:publication/id :translation-pipeline-es
+     :publication/document :knoxx.docs/translation-pipeline
+     :publication/garden :gardens/promethean
+     :publication/locale :es
+     :publication/revision :source/current
+     :publication/state :published
+     :publication/path "/translation-pipeline"
+     :translation/review :required}]})
+
+(deftest document-garden-publication-kinds-register-test
+  (testing "entry-kinds recognizes each new kind's id key"
+    (is (= [:document] (m/entry-kinds (first (:resources knoxx-docs-file)))))
+    (is (= [:garden] (m/entry-kinds (second (:resources knoxx-docs-file)))))
+    (is (= [:publication] (m/entry-kinds (nth (:resources knoxx-docs-file) 2)))))
+  (testing "namespace-file-definitions expands one definition per entry, not zero"
+    (let [defs (m/namespace-file-definitions knoxx-docs-file)]
+      (is (= 3 (count defs)))
+      (is (= #{:document :garden :publication} (set (map :resource/kind defs))))
+      (is (= :knoxx.docs/translation-pipeline
+             (:resource/qualified-id (def-of defs :document))))
+      (is (= :knoxx.docs/promethean
+             (:resource/qualified-id (def-of defs :garden))))
+      (is (= :knoxx.docs/translation-pipeline-es
+             (:resource/qualified-id (def-of defs :publication)))))))
