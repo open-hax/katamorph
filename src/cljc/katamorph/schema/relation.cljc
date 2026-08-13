@@ -13,11 +13,11 @@
       (= provided required) true
       (= required :any) true
 
-      (= required-type :or)
-      (boolean (some #(compatible? provided %) (form/children required)))
-
       (= provided-type :or)
       (every? #(compatible? % required) (form/children provided))
+
+      (= required-type :or)
+      (boolean (some #(compatible? provided %) (form/children required)))
 
       (= required-type :and)
       (every? #(compatible? provided %) (form/children required))
