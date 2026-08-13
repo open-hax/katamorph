@@ -48,7 +48,10 @@
    [:runtime-feature :runtime-feature/id]
    [:sub-agent :sub-agent/id]
    [:mcp-server :mcp-server/id]
-   [:provider :provider/id]])
+   [:provider :provider/id]
+   [:document :document/id]
+   [:garden :garden/id]
+   [:publication :publication/id]])
 
 (def kind->id-key
   (into {} kind-id-keys))
