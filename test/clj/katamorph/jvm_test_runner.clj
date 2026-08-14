@@ -1,5 +1,6 @@
 (ns katamorph.jvm-test-runner
   (:require [clojure.test :as test]
+            [katamorph.action.binding-registry-test]
             [katamorph.action.registry-test]
             [katamorph.schema.action-semantics-test]
             [katamorph.schema.registry-test]
@@ -16,6 +17,7 @@
    'katamorph.schema.relation-test
    'katamorph.schema.action-semantics-test
    'katamorph.action.registry-test
+   'katamorph.action.binding-registry-test
    'katamorph.schema.step-dataflow-test
    'katamorph.workflow.validation-test
    'katamorph.workflow.graph-test
