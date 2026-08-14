@@ -1,15 +1,15 @@
 (ns katamorph.schema.step
-  (:require [katamorph.schema.action :as action]))
+  (:require [katamorph.action.input :as input]
+            [katamorph.schema.action :as action]))
 
-;; The producer is a step id, which may be a string or a keyword like any other
-;; contract id. The output is a key in that producer's :action/provides, and
-;; PortMap keys are keywords — so a string output can never resolve and the
-;; reference is rejected here rather than surviving to wire validation.
-(def StepOutputRef
-  [:tuple [:= :step] action/ContractId keyword?])
+;; Backward-compatible public alias. The generalized input language now owns
+;; reference forms because step outputs are only one possible value source.
+(def StepOutputRef input/StepOutputRef)
 
+;; Step input names remain action port keywords even though direct invocation
+;; maps retain string-key compatibility at their outer wire boundary.
 (def StepInputs
-  [:map-of keyword? StepOutputRef])
+  [:map-of keyword? input/InputValue])
 
 (def ActionStep
   [:map {:closed false}
