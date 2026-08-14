@@ -23,6 +23,23 @@
          {:step/action :review/sme
           :step/in {:candidate [:translate :candidate]}})))))
 
+(deftest string-output-ports-are-rejected
+  ;; :action/provides is a PortMap, whose keys are keywords. A string output
+  ;; could never be found in it, so the reference is invalid at the schema
+  ;; rather than merely unsatisfiable at wire validation.
+  (is (false?
+       (:ok
+        (validation/validate-schema
+         step/ActionStep
+         {:step/action :review/sme
+          :step/in {:candidate [:step :translate "candidate"]}}))))
+  ;; the producer id keeps the full contract-id vocabulary
+  (is (:ok
+       (validation/validate-schema
+        step/ActionStep
+        {:step/action :review/sme
+         :step/in {:candidate [:step "translate" :candidate]}}))))
+
 (deftest config-and-dataflow-remain-distinct
   (let [value {:step/action :translate
                :step/with {:target-locale :fr}
