@@ -1,10 +1,10 @@
 (ns katamorph.schema.step-dataflow-test
   #?(:clj
-     (:require [clojure.test :refer [deftest is]]
+     (:require [clojure.test :refer [deftest is testing]]
                [katamorph.schema.step :as step]
                [katamorph.schema.validation :as validation])
      :cljs
-     (:require [cljs.test :refer [deftest is]]
+     (:require [cljs.test :refer [deftest is testing]]
                [katamorph.schema.step :as step]
                [katamorph.schema.validation :as validation])))
 
@@ -15,18 +15,39 @@
                :step/in {:candidate [:step :translate :candidate]}}]
     (is (:ok (validation/validate-schema step/ActionStep value)))))
 
-(deftest arbitrary-vectors-are-not-step-references
-  (is (false?
-       (:ok
-        (validation/validate-schema
-         step/ActionStep
-         {:step/action :review/sme
-          :step/in {:candidate [:translate :candidate]}})))))
+(deftest step-inputs-share-the-portable-input-value-language
+  (doseq [source [[:event :subject]
+                  [:workflow :input :document]
+                  [:trigger :payload :repository]
+                  [:resource :documents/foo]
+                  [:literal {:mode :strict}]
+                  [:domain :ordinary-literal]]]
+    (is (:ok
+         (validation/validate-schema
+          step/ActionStep
+          {:step/action :review/sme
+           :step/in {:candidate source}}))
+        (pr-str source))))
+
+(deftest malformed-reserved-references-still-fail-at-shape-validation
+  (doseq [source [[:step :translate]
+                  [:step :translate "candidate"]
+                  [:event]
+                  [:workflow :output :document]
+                  [:trigger :event]
+                  [:resource]
+                  [:literal]]]
+    (is (false?
+         (:ok
+          (validation/validate-schema
+           step/ActionStep
+           {:step/action :review/sme
+            :step/in {:candidate source}})))
+        (pr-str source))))
 
 (deftest string-output-ports-are-rejected
   ;; :action/provides is a PortMap, whose keys are keywords. A string output
-  ;; could never be found in it, so the reference is invalid at the schema
-  ;; rather than merely unsatisfiable at wire validation.
+  ;; could never resolve, so a step-output reference rejects it immediately.
   (is (false?
        (:ok
         (validation/validate-schema
@@ -39,6 +60,14 @@
         step/ActionStep
         {:step/action :review/sme
          :step/in {:candidate [:step "translate" :candidate]}}))))
+
+(deftest step-input-port-names-remain-keywords
+  (is (false?
+       (:ok
+        (validation/validate-schema
+         step/ActionStep
+         {:step/action :review/sme
+          :step/in {"candidate" [:step :translate :candidate]}})))))
 
 (deftest config-and-dataflow-remain-distinct
   (let [value {:step/action :translate
