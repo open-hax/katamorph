@@ -1,0 +1,7 @@
+flowchart LR
+  A[Portable action contracts] --> R[Action registry]
+  R --> V[Identity and semantic validation]
+  V -->|valid| C[Composed registry]
+  V -->|runtime binding present| F[Structural finding]
+  C --> W[Workflow composition]
+  C --> B[Runtime provider binding]
