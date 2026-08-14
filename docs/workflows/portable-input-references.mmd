@@ -1,0 +1,12 @@
+flowchart LR
+  Input[operation/in value] --> Reserved{Reserved vector head?}
+  Reserved -->|no| Literal[Portable literal]
+  Reserved -->|yes| Ref[Validate typed reference]
+  Ref --> Step[step output]
+  Ref --> Event[event path]
+  Ref --> Workflow[workflow input]
+  Ref --> Trigger[trigger payload]
+  Ref --> Resource[resource id]
+  Ref --> Explicit[explicit literal wrapper]
+  Ref -->|malformed| Finding[Structural finding]
+  Config[operation/with] -. plain PortableValue .-> Literal
