@@ -1,5 +1,6 @@
 (ns katamorph.action.application
-  (:require [katamorph.action.invocation :as invocation]
+  (:require [clojure.set :as set]
+            [katamorph.action.invocation :as invocation]
             [katamorph.schema.action :as action]
             [malli.core :as m]))
 
@@ -33,10 +34,10 @@
           [{:law/id :action/application-id-mismatch
             :expected expected-id
             :actual actual-id}])
-        (for [port (sort-by str (clojure.set/difference required supplied))]
+        (for [port (sort-by str (set/difference required supplied))]
           {:law/id :action/application-missing-input
            :input port})
-        (for [port (sort-by str (clojure.set/difference supplied required))]
+        (for [port (sort-by str (set/difference supplied required))]
           {:law/id :action/application-undeclared-input
            :input port})))))
 
