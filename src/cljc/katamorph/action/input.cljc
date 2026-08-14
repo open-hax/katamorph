@@ -1,7 +1,6 @@
 (ns katamorph.action.input
   (:require [katamorph.schema.action :as action]
-            [katamorph.schema.condition :as condition]
-            [katamorph.schema.step :as step]))
+            [katamorph.schema.condition :as condition]))
 
 (def reserved-heads
   #{:step :event :workflow :trigger :resource :literal})
@@ -10,7 +9,8 @@
   (and (vector? value)
        (contains? reserved-heads (first value))))
 
-(def StepOutputRef step/StepOutputRef)
+(def StepOutputRef
+  [:tuple [:= :step] action/ContractId keyword?])
 
 (def EventPathRef
   [:and
