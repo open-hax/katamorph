@@ -1,15 +1,26 @@
 (ns katamorph.schema.registry
   (:require [katamorph.schema.kind :as kind]))
 
-(defn schema-for
-  "Resolve kind in registry, returning nil when it is not declared."
-  [registry schema-kind]
-  (get registry (kind/normalize-kind schema-kind)))
-
 (defn- normalized-entries [registry]
   (map (fn [[schema-id schema]]
          [(kind/normalize-kind schema-id) schema])
        registry))
+
+(defn schema-for
+  "Resolve kind in registry, returning nil when it is not declared.
+
+   Registries built by compose-registries carry canonical keyword ids, so the
+   direct lookup answers. A registry handed in raw may still key on strings —
+   a single contributor has no reason to compose — and a miss rescans by
+   normalized id rather than calling the kind undeclared."
+  [registry schema-kind]
+  (let [normalized (kind/normalize-kind schema-kind)]
+    (if (contains? registry normalized)
+      (get registry normalized)
+      (some (fn [[schema-id schema]]
+              (when (= normalized (kind/normalize-kind schema-id))
+                schema))
+            registry))))
 
 (defn registry-conflicts
   "Return normalized schema ids declared by more than one registry."
