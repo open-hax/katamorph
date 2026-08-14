@@ -1,0 +1,8 @@
+flowchart LR
+  JVM[CLJ integer] --> Check[PortableInteger]
+  JS[CLJS integer] --> Check
+  Check -->|within ±(2^53-1)| Exact[Exact cross-runtime integer]
+  Check -->|outside safe range| Finding[Structural finding]
+  Double[Integer-valued double] -->|not an index integer| Finding
+  Exact --> Path[Condition path segment]
+  Exact --> Future[Portable identity / index contracts]
