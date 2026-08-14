@@ -72,6 +72,17 @@ jobs:
           distribution: temurin
           java-version: "21"
 
+      - name: Install Clojure CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          installer="linux-install-${CLOJURE_TOOLS_VERSION}.sh"
+          curl -fsSLO "https://download.clojure.org/install/$installer"
+          chmod +x "$installer"
+          sudo "./$installer"
+          rm "$installer"
+          clojure -Sdescribe
+
       - name: Set up Node 22
         uses: actions/setup-node@v4
         with:
@@ -120,7 +131,7 @@ jobs:
             node --version
             npm --version
             java -version
-            command -v clojure >/dev/null 2>&1 && clojure -Sdescribe || true
+            clojure -Sdescribe
           } > "$OUT/metadata/tool-versions.txt" 2>&1
 
           cat > "$OUT/manifest.json" <<EOF
