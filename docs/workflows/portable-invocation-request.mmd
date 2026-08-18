@@ -1,0 +1,7 @@
+flowchart LR
+  Reaction[Reaction or caller] --> Request[Portable InvocationRequest]
+  Request --> Action[ActionSemantics id]
+  Request --> Config[Portable config + inputs]
+  Provider[Provider choice] -. runtime only .-> Invoke[Runtime invocation]
+  Handler[Handler implementation] -. runtime only .-> Invoke
+  Request --> Invoke

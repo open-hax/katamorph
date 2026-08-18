@@ -1,5 +1,6 @@
 (ns katamorph.jvm-test-runner
   (:require [clojure.test :as test]
+            [katamorph.action.invocation-test]
             [katamorph.condition-test]
             [katamorph.condition.path-test]
             [katamorph.schema.action-semantics-test]
@@ -9,7 +10,8 @@
             [katamorph.schema.validation-test]))
 
 (defn -main [& _]
-  (let [result (test/run-tests 'katamorph.condition-test
+  (let [result (test/run-tests 'katamorph.action.invocation-test
+                               'katamorph.condition-test
                                'katamorph.condition.path-test
                                'katamorph.schema.action-semantics-test
                                'katamorph.schema.condition-test
