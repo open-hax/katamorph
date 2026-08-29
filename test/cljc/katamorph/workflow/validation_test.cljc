@@ -97,17 +97,22 @@
         "the step id sits in a reference kind the graph must not read as an edge")))
 
 (deftest malformed-references-return-structured-findings
-  (doseq [reference [:source [:step :load]]]
+  (doseq [reference [:source
+                     [:step :translate]
+                     [:step :translate :document :extra]]]
     (let [result (validation/validate-steps
                   actions
                   [{:step/id :translate
                     :step/action :translate
-                    :step/in {:source reference}}])]
+                    :step/in {:source reference}}])
+          law-ids (set (map :law/id (:errors result)))]
       (is (false? (:ok result)))
       (is (= :workflow/unsupported-reference
              (-> result :errors first :law/id)))
       (is (= reference
-             (-> result :errors first :reference))))))
+             (-> result :errors first :reference)))
+      (is (not (contains? law-ids :workflow/cyclic-dataflow))
+          "malformed step references must not add dependency edges"))))
 
 (deftest duplicate-step-identities-are-ambiguous
   (let [result (validation/validate-steps
