@@ -10,6 +10,7 @@ on:
         type: boolean
   pull_request:
     paths:
+      - "LICENSE"
       - "package.json"
       - "package-lock.json"
       - "deps.edn"
@@ -24,6 +25,7 @@ on:
     tags:
       - "sandbox-bundle-*"
     paths:
+      - "LICENSE"
       - ".github/sandbox/**"
       - ".github/workflows/sandbox-bundle.yml"
       - "package-lock.json"
@@ -157,10 +159,10 @@ jobs:
             [[ -f "$file" ]] && cp "$file" "$OUT/metadata/$file"
           done
           {
-            node --version
-            npm --version
-            java -version
-            clojure -Sdescribe
+            if command -v node >/dev/null 2>&1; then node --version; else echo "node: unavailable"; fi
+            if command -v npm >/dev/null 2>&1; then npm --version; else echo "npm: unavailable"; fi
+            if command -v java >/dev/null 2>&1; then java -version; else echo "java: unavailable"; fi
+            if command -v clojure >/dev/null 2>&1; then clojure -Sdescribe; else echo "clojure: unavailable"; fi
           } > "$OUT/metadata/tool-versions.txt" 2>&1
 
           jq --null-input \
