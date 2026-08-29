@@ -26,10 +26,21 @@
       (let [errors (reference-errors action-registry provider-registry registry)]
         {:ok (empty? errors) :registry registry :errors errors}))))
 
+(defn- contract-id-sort-key [id]
+  [(if (keyword? id) 0 1) (str id)])
+
 (defn providers-for [action-registry provider-registry registry action-id]
   (let [bound (bind action-registry provider-registry registry)]
-    (if-not (:ok bound)
-      bound
+    (cond
+      (not (:ok bound)) bound
+
+      (nil? (actions/resolve-action action-registry action-id))
+      {:ok false
+       :registry registry
+       :errors [{:law/id :binding/unknown-action
+                 :action/id action-id}]}
+
+      :else
       {:ok true
        :bindings (->> registry vals
                       (filter #(= action-id (:binding/action %)))
@@ -38,5 +49,5 @@
                                       (:enabled
                                        (get provider-registry
                                             (:binding/provider %)))))
-                      (sort-by #(str (:binding/id %)))
+                      (sort-by #(contract-id-sort-key (:binding/id %)))
                       vec)})))

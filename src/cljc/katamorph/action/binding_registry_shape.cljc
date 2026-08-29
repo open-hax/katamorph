@@ -28,9 +28,10 @@
        (sort-by str) vec))
 
 (defn compose [& registries]
-  (let [errors (vec (mapcat #(-> % validate :errors) registries))
-        duplicates (conflicts registries)]
-    (cond
-      (seq errors) {:ok false :reason :invalid-binding-registry :errors errors}
-      (seq duplicates) {:ok false :reason :binding-id-conflict :conflicts duplicates}
-      :else {:ok true :registry (apply merge {} registries) :conflicts []})))
+  (let [errors (vec (mapcat #(-> % validate :errors) registries))]
+    (if (seq errors)
+      {:ok false :reason :invalid-binding-registry :errors errors}
+      (let [duplicates (conflicts registries)]
+        (if (seq duplicates)
+          {:ok false :reason :binding-id-conflict :conflicts duplicates}
+          {:ok true :registry (apply merge {} registries) :conflicts []})))))

@@ -52,6 +52,8 @@
   (is (= :invalid-binding-registry
          (:reason (shape/compose nil))))
   (is (= :invalid-binding-registry
+         (:reason (shape/compose 42))))
+  (is (= :invalid-binding-registry
          (:reason (registry/bind actions providers nil)))))
 
 (deftest references-must-resolve-before-use
@@ -91,3 +93,26 @@
     (is (:ok result))
     (is (= [:render/local]
            (mapv :binding/id (:bindings result))))))
+
+(deftest requested-actions-must-resolve-before-candidate-selection
+  (let [result (registry/providers-for actions providers {} :missing/action)]
+    (is (false? (:ok result)))
+    (is (= [{:law/id :binding/unknown-action
+             :action/id :missing/action}]
+           (:errors result)))))
+
+(deftest candidate-order-is-total-across-contract-id-types
+  (let [keyword-binding local-render
+        string-binding (assoc cloud-render :binding/id ":render/local")
+        keyword-first (array-map :render/local keyword-binding
+                                 ":render/local" string-binding)
+        string-first (array-map ":render/local" string-binding
+                                :render/local keyword-binding)
+        ids (fn [bindings]
+              (->> (registry/providers-for actions providers bindings :render/html)
+                   :bindings
+                   (mapv :binding/id)))]
+    (is (= [:render/local ":render/local"]
+           (ids keyword-first)))
+    (is (= [:render/local ":render/local"]
+           (ids string-first)))))
