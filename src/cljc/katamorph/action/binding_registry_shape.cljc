@@ -2,19 +2,21 @@
   (:require [katamorph.action.binding-schema :as binding]))
 
 (defn errors [registry]
-  (->> registry
-       (mapcat
-        (fn [[id value]]
-          (cond-> []
-            (not= id (:binding/id value))
-            (conj {:law/id :binding/registry-id-mismatch
-                   :registry/id id
-                   :binding/id (:binding/id value)})
-            (not (binding/valid? value))
-            (conj {:law/id :binding/invalid-shape
-                   :registry/id id}))))
-       (sort-by #(str (:registry/id %)))
-       vec))
+  (if-not (map? registry)
+    [{:law/id :binding/invalid-registry}]
+    (->> registry
+         (mapcat
+          (fn [[id value]]
+            (cond-> []
+              (not= id (:binding/id value))
+              (conj {:law/id :binding/registry-id-mismatch
+                     :registry/id id
+                     :binding/id (:binding/id value)})
+              (not (binding/valid? value))
+              (conj {:law/id :binding/invalid-shape
+                     :registry/id id}))))
+         (sort-by #(str (:registry/id %)))
+         vec)))
 
 (defn validate [registry]
   (let [problems (errors registry)]

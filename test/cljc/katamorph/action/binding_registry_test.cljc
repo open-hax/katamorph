@@ -43,6 +43,17 @@
     (is (= :binding/registry-id-mismatch
            (-> result :errors first :law/id)))))
 
+(deftest binding-registries-must-be-maps
+  (doseq [value [nil [] 42]]
+    (let [result (shape/validate value)]
+      (is (false? (:ok result)))
+      (is (= :binding/invalid-registry
+             (-> result :errors first :law/id)))))
+  (is (= :invalid-binding-registry
+         (:reason (shape/compose nil))))
+  (is (= :invalid-binding-registry
+         (:reason (registry/bind actions providers nil)))))
+
 (deftest references-must-resolve-before-use
   (testing "unknown action"
     (let [result (registry/bind actions providers
@@ -70,4 +81,13 @@
         result (registry/providers-for actions providers bindings :render/html)]
     (is (:ok result))
     (is (= [:render/cloud :render/local]
+           (mapv :binding/id (:bindings result))))))
+
+(deftest disabled-host-providers-are-not-candidates
+  (let [provider-registry (assoc-in providers [:provider/cloud :enabled] false)
+        bindings {:render/local local-render
+                  :render/cloud cloud-render}
+        result (registry/providers-for actions provider-registry bindings :render/html)]
+    (is (:ok result))
+    (is (= [:render/local]
            (mapv :binding/id (:bindings result))))))

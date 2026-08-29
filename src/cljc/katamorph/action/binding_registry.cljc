@@ -34,5 +34,9 @@
        :bindings (->> registry vals
                       (filter #(= action-id (:binding/action %)))
                       (filter #(not= false (:binding/enabled? %)))
+                      (filter #(not= false
+                                      (:enabled
+                                       (get provider-registry
+                                            (:binding/provider %)))))
                       (sort-by #(str (:binding/id %)))
                       vec)})))
