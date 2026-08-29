@@ -30,8 +30,9 @@
                  (first (form/children provided)))
 
       (and (= provided-type :enum) (= required-type :enum))
-      (every? (set (form/children required))
-              (set (form/children provided)))
+      (let [required-values (set (form/children required))]
+        (every? #(contains? required-values %)
+                (form/children provided)))
 
       (and (= provided-type :map) (= required-type :map))
       (map-relation/compatible? provided required compatible?)

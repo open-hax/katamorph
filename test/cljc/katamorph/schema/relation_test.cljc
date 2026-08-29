@@ -20,6 +20,18 @@
        [:or [:= :a] [:= :b]]
        [:or [:enum :a :c] [:enum :b :d]])))
 
+(deftest enum-subsets-support-falsey-members
+  (is (compatibility/compatible-contract?
+       [:enum false]
+       [:enum false true]))
+  (is (compatibility/compatible-contract?
+       [:enum nil false]
+       [:enum nil false true]))
+  (is (false?
+       (compatibility/compatible-contract?
+        [:enum false]
+        [:enum true]))))
+
 (deftest map-providers-must-satisfy-required-fields
   (let [provided [:map {:closed true}
                   [:id :string]
