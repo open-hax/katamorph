@@ -61,7 +61,30 @@
     (is (false?
          (compatibility/compatible-contract?
           [:map [:id :string]]
-          [:map {:closed true} [:id :string]])))))
+          [:map {:closed true} [:id :string]]))))
+
+  (testing "truthy closure properties follow Malli semantics"
+    (let [required [:map {:closed :strict} [:id :string]]]
+      (is (false?
+           (compatibility/compatible-contract?
+            [:map [:id :string]]
+            required)))
+      (is (compatibility/compatible-contract?
+           [:map {:closed :strict} [:id :string]]
+           required))
+      (is (compatibility/compatible-contract?
+           [:map {:closed :strict}]
+           [:map [:id {:optional true} :string]]))))
+
+  (testing "truthy optional properties follow Malli semantics"
+    (let [optional-id [:map [:id {:optional :omittable} :string]]]
+      (is (false?
+           (compatibility/compatible-contract?
+            optional-id
+            [:map [:id :string]])))
+      (is (compatibility/compatible-contract?
+           [:map {:closed :strict}]
+           optional-id)))))
 
 (deftest malformed-map-entries-fail-closed
   (doseq [malformed [[:map :bogus]

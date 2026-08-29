@@ -4,7 +4,7 @@
 (defn- entry [value]
   (let [[k second-value & more] value]
     (if (map? second-value)
-      [k {:optional? (true? (:optional second-value))
+      [k {:optional? (boolean (:optional second-value))
           :schema (first more)}]
       [k {:optional? false :schema second-value}])))
 
@@ -28,6 +28,9 @@
          (every? #(schema-well-formed? (:schema %))
                  (vals schema-entries)))))
 
+(defn- closed-map? [schema]
+  (boolean (:closed (form/props schema))))
+
 (defn compatible?
   [provided required schema-compatible?]
   (let [provided-entries (entries provided)
@@ -41,11 +44,11 @@
                   (schema-compatible? (:schema provided-entry)
                                       (:schema required-entry)))
              (and (:optional? required-entry)
-                  (true? (:closed (form/props provided))))))
+                  (closed-map? provided))))
          required-entries)
         closed-ok?
-        (or (not (true? (:closed (form/props required))))
-            (and (true? (:closed (form/props provided)))
+        (or (not (closed-map? required))
+            (and (closed-map? provided)
                  (every? #(contains? required-entries %)
                          (keys provided-entries))))]
     (and (some? provided-entries)

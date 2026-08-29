@@ -134,6 +134,53 @@
       (is (= :workflow/incompatible-port-contracts
              (-> result :errors first :law/id))))))
 
+(deftest truthy-closed-required-map-rejects-an-open-provider
+  (let [map-actions
+        {:produce {:contract/kind :action
+                   :contract/id :produce
+                   :action/category :repository
+                   :action/provides
+                   {:artifact [:map [:id :string]]}}
+         :consume {:contract/kind :action
+                   :contract/id :consume
+                   :action/category :evaluation
+                   :action/requires
+                   {:artifact [:map {:closed :strict} [:id :string]]}}}
+        result
+        (validation/validate-steps
+         map-actions
+         [{:step/id :produce :step/action :produce}
+          {:step/id :consume
+           :step/action :consume
+           :step/in {:artifact [:step :produce :artifact]}}])]
+    (is (false? (:ok result)))
+    (is (= :workflow/incompatible-port-contracts
+           (-> result :errors first :law/id)))))
+
+(deftest truthy-optional-provider-cannot-satisfy-a-required-field
+  (let [map-actions
+        {:produce {:contract/kind :action
+                   :contract/id :produce
+                   :action/category :repository
+                   :action/provides
+                   {:artifact
+                    [:map [:id {:optional :omittable} :string]]}}
+         :consume {:contract/kind :action
+                   :contract/id :consume
+                   :action/category :evaluation
+                   :action/requires
+                   {:artifact [:map [:id :string]]}}}
+        result
+        (validation/validate-steps
+         map-actions
+         [{:step/id :produce :step/action :produce}
+          {:step/id :consume
+           :step/action :consume
+           :step/in {:artifact [:step :produce :artifact]}}])]
+    (is (false? (:ok result)))
+    (is (= :workflow/incompatible-port-contracts
+           (-> result :errors first :law/id)))))
+
 (deftest unsupported-references-do-not-also-report-a-cycle
   (let [result (validation/validate-steps
                 actions
