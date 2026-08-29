@@ -111,7 +111,11 @@
                      42
                      []
                      [42]
-                     [:vector 42]]]
+                     [:vector 42]
+                     [:vector [:bogus]]
+                     [:tuple [:bogus] :artifact/text]
+                     [:map-of :artifact/key [:bogus]]
+                     [:map [:payload [:vector [:bogus]]]]]]
     (is (false?
          (compatibility/compatible-contract?
           malformed
@@ -127,6 +131,10 @@
                   'artifact/text
                   string?
                   [:vector :artifact/text]
+                  [:vector [:vector :artifact/text]]
+                  [:vector [:= [1 2]]]
+                  [:map-of :artifact/key :artifact/value]
+                  [:tuple [:= [1 2]] :artifact/text]
                   [:> 0]]]
     (is (compatibility/compatible-contract? schema schema))))
 

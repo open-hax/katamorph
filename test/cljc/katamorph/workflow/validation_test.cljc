@@ -111,6 +111,7 @@
                                [:artifact/text [:and]]
                                [[:or] [:or]]
                                [[:or 42] :any]
+                               [[:vector [:bogus]] :any]
                                [[:map [:payload 42]]
                                 [:map [:payload :any]]]]]
     (let [malformed-actions

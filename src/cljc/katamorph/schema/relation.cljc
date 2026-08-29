@@ -6,6 +6,9 @@
 
 (declare compatible?)
 
+(def ^:private nominal-schema
+  (m/schema :any))
+
 (def ^:private nominal-registry
   (mr/lazy-registry
    m/default-registry
@@ -13,20 +16,11 @@
      (when (or (keyword? schema-id)
                (string? schema-id)
                (symbol? schema-id))
-       :any))))
-
-(defn- registered-vector-form? [schema]
-  (or (not (vector? schema))
-      (let [schema-type (form/type-of schema)
-            into-schema (if (m/into-schema? schema-type)
-                          schema-type
-                          (mr/schema m/default-registry schema-type))]
-        (m/into-schema? into-schema))))
+       nominal-schema))))
 
 (defn- opaque-well-formed? [schema]
   (try
-    (and (registered-vector-form? schema)
-         (boolean (m/schema schema {:registry nominal-registry})))
+    (boolean (m/schema schema {:registry nominal-registry}))
     (catch #?(:clj Throwable :cljs :default) _
       false)))
 
