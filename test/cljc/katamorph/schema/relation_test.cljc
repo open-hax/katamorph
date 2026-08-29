@@ -78,6 +78,30 @@
           malformed
           malformed)))))
 
+(deftest malformed-supported-combinators-fail-closed
+  (doseq [malformed [[:or]
+                     [:and]
+                     [:=]
+                     [:= :ready :done]
+                     [:enum]
+                     [:any :bogus]
+                     [:or [:and]]
+                     [:or :string {:title "misplaced"}]
+                     [:or (list :string)]
+                     [:map [:payload [:or]]]]]
+    (is (false?
+         (compatibility/compatible-contract?
+          malformed
+          :artifact/text)))
+    (is (false?
+         (compatibility/compatible-contract?
+          :artifact/text
+          malformed)))
+    (is (false?
+         (compatibility/compatible-contract?
+          malformed
+          malformed)))))
+
 (deftest unknown-relations-fail-closed
   (is (false?
        (compatibility/compatible-contract?

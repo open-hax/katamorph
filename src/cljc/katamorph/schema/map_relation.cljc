@@ -22,6 +22,12 @@
                   (count (set (map first children)))))
       (into {} (map entry children)))))
 
+(defn well-formed? [schema schema-well-formed?]
+  (let [schema-entries (entries schema)]
+    (and (some? schema-entries)
+         (every? #(schema-well-formed? (:schema %))
+                 (vals schema-entries)))))
+
 (defn compatible?
   [provided required schema-compatible?]
   (let [provided-entries (entries provided)

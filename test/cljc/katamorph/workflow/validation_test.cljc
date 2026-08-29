@@ -106,6 +106,30 @@
     (is (= :workflow/incompatible-port-contracts
            (-> result :errors first :law/id)))))
 
+(deftest malformed-combinator-port-contracts-return-structured-findings
+  (doseq [[provided required] [[[:or] :artifact/text]
+                               [:artifact/text [:and]]
+                               [[:or] [:or]]]]
+    (let [malformed-actions
+          {:produce {:contract/kind :action
+                     :contract/id :produce
+                     :action/category :repository
+                     :action/provides {:artifact provided}}
+           :consume {:contract/kind :action
+                     :contract/id :consume
+                     :action/category :evaluation
+                     :action/requires {:artifact required}}}
+          result
+          (validation/validate-steps
+           malformed-actions
+           [{:step/id :produce :step/action :produce}
+            {:step/id :consume
+             :step/action :consume
+             :step/in {:artifact [:step :produce :artifact]}}])]
+      (is (false? (:ok result)))
+      (is (= :workflow/incompatible-port-contracts
+             (-> result :errors first :law/id))))))
+
 (deftest unsupported-references-do-not-also-report-a-cycle
   (let [result (validation/validate-steps
                 actions
