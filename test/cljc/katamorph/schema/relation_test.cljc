@@ -63,6 +63,21 @@
           [:map [:id :string]]
           [:map {:closed true} [:id :string]])))))
 
+(deftest malformed-map-entries-fail-closed
+  (doseq [malformed [[:map :bogus]
+                     [:map [:id]]
+                     [:map [:id {:optional true}]]
+                     [:map [:id :string :extra]]
+                     [:map [:id :string] [:id :string]]]]
+    (is (false?
+         (compatibility/compatible-contract?
+          malformed
+          [:map])))
+    (is (false?
+         (compatibility/compatible-contract?
+          malformed
+          malformed)))))
+
 (deftest unknown-relations-fail-closed
   (is (false?
        (compatibility/compatible-contract?

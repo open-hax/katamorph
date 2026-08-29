@@ -10,6 +10,9 @@
   (let [provided-type (form/type-of provided)
         required-type (form/type-of required)]
     (cond
+      (and (= provided-type :map) (= required-type :map))
+      (map-relation/compatible? provided required compatible?)
+
       (= provided required) true
       (= required-type :any) true
 
@@ -33,8 +36,5 @@
       (let [required-values (set (form/children required))]
         (every? #(contains? required-values %)
                 (form/children provided)))
-
-      (and (= provided-type :map) (= required-type :map))
-      (map-relation/compatible? provided required compatible?)
 
       :else false)))

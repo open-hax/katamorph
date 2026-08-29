@@ -8,8 +8,19 @@
           :schema (first more)}]
       [k {:optional? false :schema second-value}])))
 
+(defn- entry-form? [value]
+  (and (vector? value)
+       (case (count value)
+         2 (not (map? (second value)))
+         3 (map? (second value))
+         false)))
+
 (defn- entries [schema]
-  (into {} (map entry (form/children schema))))
+  (let [children (vec (form/children schema))]
+    (when (and (every? entry-form? children)
+               (= (count children)
+                  (count (set (map first children)))))
+      (into {} (map entry children)))))
 
 (defn compatible?
   [provided required schema-compatible?]
@@ -31,4 +42,7 @@
             (and (true? (:closed (form/props provided)))
                  (every? #(contains? required-entries %)
                          (keys provided-entries))))]
-    (and fields-ok? closed-ok?)))
+    (and (some? provided-entries)
+         (some? required-entries)
+         fields-ok?
+         closed-ok?)))
