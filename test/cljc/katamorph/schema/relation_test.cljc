@@ -47,6 +47,16 @@
           [:map [:id {:optional true} :string]]
           [:map [:id :string]]))))
 
+  (testing "open providers cannot omit consumer-constrained optional fields"
+    (let [required [:map [:id {:optional true} :string]]]
+      (is (false?
+           (compatibility/compatible-contract?
+            [:map]
+            required)))
+      (is (compatibility/compatible-contract?
+           [:map {:closed true}]
+           required))))
+
   (testing "a closed consumer cannot accept an open producer"
     (is (false?
          (compatibility/compatible-contract?

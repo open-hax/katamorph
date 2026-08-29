@@ -23,7 +23,8 @@
                       (not (:optional? provided-entry)))
                   (schema-compatible? (:schema provided-entry)
                                       (:schema required-entry)))
-             (:optional? required-entry)))
+             (and (:optional? required-entry)
+                  (true? (:closed (form/props provided))))))
          required-entries)
         closed-ok?
         (or (not (true? (:closed (form/props required))))
