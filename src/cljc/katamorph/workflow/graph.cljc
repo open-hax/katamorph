@@ -9,6 +9,7 @@
    report a cycle on top of the unsupported reference that is the real fault."
   [reference]
   (when (and (vector? reference)
+             (= 3 (count reference))
              (= :step (first reference)))
     (second reference)))
 

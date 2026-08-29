@@ -1,0 +1,232 @@
+name: Sandbox bundle
+
+on:
+  workflow_dispatch:
+    inputs:
+      include_dependency_cache:
+        description: Include npm and JVM caches in a separate short-lived artifact
+        required: false
+        default: false
+        type: boolean
+  pull_request:
+    paths:
+      - "LICENSE"
+      - "package.json"
+      - "package-lock.json"
+      - "deps.edn"
+      - "shadow-cljs.edn"
+      - "src/**"
+      - "test/**"
+      - ".github/sandbox/**"
+      - ".github/workflows/sandbox-bundle.yml"
+  push:
+    branches:
+      - "**"
+    tags:
+      - "sandbox-bundle-*"
+    paths:
+      - "LICENSE"
+      - ".github/sandbox/**"
+      - ".github/workflows/sandbox-bundle.yml"
+      - "package-lock.json"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sandbox-bundle-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bundle:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CLOJURE_TOOLS_VERSION: "1.12.5.1654"
+      CLOJURE_TOOLS_SHA256: "dc86cc56bc372fcef07bd87f44693eeb4b61cf5f44347883878364d03b5fb342"
+      BABASHKA_VERSION: "1.13.219"
+      BABASHKA_SHA256: "9ac1fe988d7001625b30ef3e3307e67f8545505a7cb49a4aa179f578115a3e09"
+
+    steps:
+      - name: Check out full repository history
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Initialize runner-local paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "OUT=$RUNNER_TEMP/sandbox-export" >> "$GITHUB_ENV"
+          echo "DEPS_OUT=$RUNNER_TEMP/sandbox-deps" >> "$GITHUB_ENV"
+
+      - name: Prepare revision-bound source bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$OUT" == "$RUNNER_TEMP/sandbox-export" ]] || {
+            echo "refusing unexpected OUT path: $OUT" >&2
+            exit 2
+          }
+          rm -rf -- "$OUT"
+          mkdir -p "$OUT"/{source,runtime,logs,toolchain/licenses,metadata}
+          cp LICENSE "$OUT/LICENSE"
+          cp .github/sandbox/THIRD_PARTY_NOTICES.md "$OUT/toolchain/THIRD_PARTY_NOTICES.md"
+          cp .github/sandbox/licenses/*.txt "$OUT/toolchain/licenses/"
+          repo_name="${GITHUB_REPOSITORY#*/}"
+          git bundle create "$OUT/source/${repo_name}.bundle" --all
+          git archive --format=tar.gz --prefix="${repo_name}/" --output="$OUT/source/source.tar.gz" HEAD
+          git rev-parse HEAD > "$OUT/metadata/revision.txt"
+          git status --short > "$OUT/metadata/worktree.txt"
+          git submodule status --recursive > "$OUT/metadata/submodules.txt" 2>&1 || true
+
+      - name: Set up Java 21
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Fetch verified toolchains and install Clojure CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          clojure_archive="$OUT/toolchain/clojure-tools-${CLOJURE_TOOLS_VERSION}.tar.gz"
+          babashka_archive="$OUT/toolchain/babashka-${BABASHKA_VERSION}-linux-amd64-static.tar.gz"
+          curl --fail --location --retry 3 --silent --show-error \
+            "https://download.clojure.org/install/clojure-tools-${CLOJURE_TOOLS_VERSION}.tar.gz" \
+            --output "$clojure_archive"
+          curl --fail --location --retry 3 --silent --show-error \
+            "https://github.com/babashka/babashka/releases/download/v${BABASHKA_VERSION}/babashka-${BABASHKA_VERSION}-linux-amd64-static.tar.gz" \
+            --output "$babashka_archive"
+          printf '%s  %s\n' "$CLOJURE_TOOLS_SHA256" "$clojure_archive" | sha256sum --check --strict
+          printf '%s  %s\n' "$BABASHKA_SHA256" "$babashka_archive" | sha256sum --check --strict
+
+          clojure_extract="$(mktemp -d "$RUNNER_TEMP/clojure-tools.XXXXXX")"
+          clojure_prefix="$(mktemp -d "$RUNNER_TEMP/clojure-prefix.XXXXXX")"
+          tar --no-same-owner -xzf "$clojure_archive" -C "$clojure_extract"
+          mkdir -p "$clojure_prefix"/{bin,libexec,share/man/man1}
+          install -m 0644 \
+            "$clojure_extract/clojure-tools/deps.edn" \
+            "$clojure_extract/clojure-tools/example-deps.edn" \
+            "$clojure_extract/clojure-tools/tools.edn" \
+            "$clojure_prefix/"
+          install -m 0644 "$clojure_extract/clojure-tools/"*.jar "$clojure_prefix/libexec/"
+          install -m 0644 "$clojure_extract/clojure-tools/"*.1 "$clojure_prefix/share/man/man1/"
+          install -m 0755 "$clojure_extract/clojure-tools/clojure" "$clojure_prefix/bin/clojure"
+          install -m 0755 "$clojure_extract/clojure-tools/clj" "$clojure_prefix/bin/clj"
+          sed -i "s#PREFIX#$clojure_prefix#g" "$clojure_prefix/bin/clojure"
+          sed -i "s#BINDIR#$clojure_prefix/bin#g" "$clojure_prefix/bin/clj"
+          echo "$clojure_prefix/bin" >> "$GITHUB_PATH"
+          "$clojure_prefix/bin/clojure" -Sdescribe
+
+      - name: Set up Node 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+
+      - name: Install, validate, test, and build
+        id: validate
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            npm ci --ignore-scripts --no-audit --no-fund
+            clojure -Srepro -M:test-jvm
+            npm test
+            npm run examples
+            npm run build
+          } 2>&1 | tee "$OUT/logs/validate.log"
+
+      - name: Collect generated outputs and portable toolchains
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          paths_file="$RUNNER_TEMP/sandbox-runtime-paths"
+          : > "$paths_file"
+          find . -type d \( -name dist -o -name 'dist-*' -o -name target -o -name coverage -o -name reports \) \
+            -not -path '*/node_modules/*' \
+            -not -path '*/.git/*' \
+            -not -path '*/.shadow-cljs/*' \
+            -print0 >> "$paths_file"
+          if [[ -s "$paths_file" ]]; then
+            tar --null --files-from="$paths_file" -czf "$OUT/runtime/runtime.tar.gz"
+          fi
+
+          for file in package.json package-lock.json deps.edn shadow-cljs.edn index.d.ts; do
+            [[ -f "$file" ]] && cp "$file" "$OUT/metadata/$file"
+          done
+          {
+            if command -v node >/dev/null 2>&1; then node --version; else echo "node: unavailable"; fi
+            if command -v npm >/dev/null 2>&1; then npm --version; else echo "npm: unavailable"; fi
+            if command -v java >/dev/null 2>&1; then java -version; else echo "java: unavailable"; fi
+            if command -v clojure >/dev/null 2>&1; then clojure -Sdescribe; else echo "clojure: unavailable"; fi
+          } > "$OUT/metadata/tool-versions.txt" 2>&1
+
+          jq --null-input \
+            --arg repository "$GITHUB_REPOSITORY" \
+            --arg revision "$GITHUB_SHA" \
+            --arg ref "$GITHUB_REF" \
+            --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg validation "$VALIDATION_OUTCOME" \
+            '{sandbox_bundle_version: 1,
+              repository: $repository,
+              revision: $revision,
+              ref: $ref,
+              generated_at: $generated_at,
+              validation: $validation,
+              entrypoints: ["clojure -Srepro -M:test-jvm", "npm test", "npm run examples", "npm run build"],
+              lockfile: "package-lock.json",
+              runtime_dependency_closure_included: false,
+              network_required_after_restore: true}' > "$OUT/manifest.json"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+        env:
+          VALIDATION_OUTCOME: ${{ steps.validate.outcome }}
+
+      - name: Package optional dependency cache
+        if: github.event_name == 'workflow_dispatch' && inputs.include_dependency_cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$DEPS_OUT" == "$RUNNER_TEMP/sandbox-deps" ]] || {
+            echo "refusing unexpected DEPS_OUT path: $DEPS_OUT" >&2
+            exit 2
+          }
+          rm -rf -- "$DEPS_OUT"
+          mkdir -p "$DEPS_OUT"
+          cache="$(npm config get cache 2>/dev/null || true)"
+          if [[ -n "$cache" && -d "$cache" ]]; then
+            tar -czf "$DEPS_OUT/npm-cache.tar.gz" -C "$(dirname "$cache")" "$(basename "$cache")"
+          fi
+          if [[ -d "$HOME/.m2/repository" ]]; then
+            tar -czf "$DEPS_OUT/m2-repository.tar.gz" -C "$HOME/.m2" repository
+          fi
+          if [[ -d "$HOME/.gitlibs" ]]; then
+            tar -czf "$DEPS_OUT/gitlibs.tar.gz" -C "$HOME" .gitlibs
+          fi
+          (cd "$DEPS_OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+
+      - name: Upload sandbox bundle
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: katamorph-sandbox-${{ github.sha }}
+          path: ${{ runner.temp }}/sandbox-export
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload optional dependency cache
+        if: github.event_name == 'workflow_dispatch' && inputs.include_dependency_cache
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: katamorph-sandbox-deps-${{ github.sha }}
+          path: ${{ runner.temp }}/sandbox-deps
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Preserve validation result
+        if: always() && steps.validate.outcome == 'failure'
+        shell: bash
+        run: exit 1

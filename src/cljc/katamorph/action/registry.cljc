@@ -6,10 +6,12 @@
   #{:action/fn :action/handler :action/implementation})
 
 (defn- runtime-bindings [contract]
-  (->> runtime-binding-keys
-       (filter #(contains? contract %))
-       (sort-by str)
-       vec))
+  (if (map? contract)
+    (->> runtime-binding-keys
+         (filter #(contains? contract %))
+         (sort-by str)
+         vec)
+    []))
 
 (defn entry-errors [registry]
   (->> registry

@@ -49,6 +49,12 @@
     (is (= :action/invalid-contract
            (-> result :errors first :law/id)))))
 
+(deftest scalar-action-contracts-return-structured-errors
+  (let [result (registry/compose {:bad 42})
+        law-ids (set (map :law/id (:errors result)))]
+    (is (= :invalid-action-registry (:reason result)))
+    (is (contains? law-ids :action/invalid-contract))))
+
 (deftest runtime-bindings-are-not-semantic-action-data
   (let [result (registry/compose
                 {:repository/read

@@ -12,7 +12,7 @@
     (sequential? value) (mapcat #(collect-humanized-errors prefix %) value)
     (map? value) (mapcat (fn [[k v]]
                            (collect-humanized-errors (conj prefix (str k)) v))
-                         value)
+                         (sort-by (comp str key) value))
     :else [{:path prefix :message (pr-str value)}]))
 
 (defn validation-errors
