@@ -1,8 +1,34 @@
 (ns katamorph.schema.relation
   (:require [katamorph.schema.form :as form]
-            [katamorph.schema.map-relation :as map-relation]))
+            [katamorph.schema.map-relation :as map-relation]
+            [malli.core :as m]
+            [malli.registry :as mr]))
 
 (declare compatible?)
+
+(def ^:private nominal-registry
+  (mr/lazy-registry
+   m/default-registry
+   (fn [schema-id _]
+     (when (or (keyword? schema-id)
+               (string? schema-id)
+               (symbol? schema-id))
+       :any))))
+
+(defn- registered-vector-form? [schema]
+  (or (not (vector? schema))
+      (let [schema-type (form/type-of schema)
+            into-schema (if (m/into-schema? schema-type)
+                          schema-type
+                          (mr/schema m/default-registry schema-type))]
+        (m/into-schema? into-schema))))
+
+(defn- opaque-well-formed? [schema]
+  (try
+    (and (registered-vector-form? schema)
+         (boolean (m/schema schema {:registry nominal-registry})))
+    (catch #?(:clj Throwable :cljs :default) _
+      false)))
 
 (defn- well-formed? [schema]
   (let [schema-type (form/type-of schema)
@@ -16,8 +42,7 @@
       := (= 1 (count children))
       :enum (boolean (seq children))
       :map (map-relation/well-formed? schema well-formed?)
-      (or (not (coll? schema))
-          (vector? schema)))))
+      (opaque-well-formed? schema))))
 
 (defn compatible?
   "Return true only when the supported schema forms prove provided <: required."

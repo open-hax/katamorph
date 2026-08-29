@@ -109,7 +109,10 @@
 (deftest malformed-combinator-port-contracts-return-structured-findings
   (doseq [[provided required] [[[:or] :artifact/text]
                                [:artifact/text [:and]]
-                               [[:or] [:or]]]]
+                               [[:or] [:or]]
+                               [[:or 42] :any]
+                               [[:map [:payload 42]]
+                                [:map [:payload :any]]]]]
     (let [malformed-actions
           {:produce {:contract/kind :action
                      :contract/id :produce

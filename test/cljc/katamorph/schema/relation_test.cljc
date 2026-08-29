@@ -86,9 +86,12 @@
                      [:enum]
                      [:any :bogus]
                      [:or [:and]]
+                     [:or 42]
+                     [:and false]
                      [:or :string {:title "misplaced"}]
                      [:or (list :string)]
-                     [:map [:payload [:or]]]]]
+                     [:map [:payload [:or]]]
+                     [:map [:payload 42]]]]
     (is (false?
          (compatibility/compatible-contract?
           malformed
@@ -101,6 +104,31 @@
          (compatibility/compatible-contract?
           malformed
           malformed)))))
+
+(deftest invalid-scalar-and-opaque-schema-forms-fail-closed
+  (doseq [malformed [nil
+                     false
+                     42
+                     []
+                     [42]
+                     [:vector 42]]]
+    (is (false?
+         (compatibility/compatible-contract?
+          malformed
+          :any)))
+    (is (false?
+         (compatibility/compatible-contract?
+          malformed
+          malformed)))))
+
+(deftest valid-nominal-and-opaque-schema-forms-remain-exact
+  (doseq [schema [:artifact/text
+                  "artifact/text"
+                  'artifact/text
+                  string?
+                  [:vector :artifact/text]
+                  [:> 0]]]
+    (is (compatibility/compatible-contract? schema schema))))
 
 (deftest unknown-relations-fail-closed
   (is (false?
