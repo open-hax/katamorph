@@ -11,11 +11,14 @@
     (loop [current context segments (seq path)]
       (if-not segments
         {:found? true :value current}
-        (let [segment (first segments)]
+        (let [segment (first segments)
+              lookup-segment (if (schema/portable-integer? segment)
+                               #?(:clj (long segment) :cljs segment)
+                               segment)]
           (cond
             (map? current)
-            (if (contains? current segment)
-              (recur (get current segment) (next segments))
+            (if (contains? current lookup-segment)
+              (recur (get current lookup-segment) (next segments))
               {:found? false})
 
             (vector? current)
