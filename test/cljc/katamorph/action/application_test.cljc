@@ -63,16 +63,19 @@
              :input ":source"}]
            (:errors (application/validate action request))))))
 
-(deftest diagnostic-order-distinguishes-keyword-components
-  (let [shallow (keyword "a" "b/c")
-        nested (keyword "a/b" "c")
-        action (assoc translate :action/requires {})
-        request {:operation/id :translation/transduce
-                 :operation/in (array-map shallow :shallow
-                                          nested :nested)}]
-    ;; Both keywords print as :a/b/c, but namespace/name remain distinct.
-    (is (= [shallow nested]
-           (mapv :input (:errors (application/validate action request)))))))
+#?(:clj
+   (deftest diagnostic-order-distinguishes-keyword-components
+     (let [shallow (keyword "a" "b/c")
+           nested (keyword "a/b" "c")
+           action (assoc translate :action/requires {})
+           request {:operation/id :translation/transduce
+                    :operation/in (array-map shallow :shallow
+                                             nested :nested)}]
+       ;; These are distinct JVM keywords that both print as :a/b/c.
+       ;; ClojureScript interns both constructions as the same keyword, so the
+       ;; collision fixture only exists on the host named by the finding.
+       (is (= [shallow nested]
+              (mapv :input (:errors (application/validate action request))))))))
 
 (deftest configuration-is-not-confused-with-dataflow
   (let [result (application/validate
