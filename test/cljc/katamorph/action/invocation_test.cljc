@@ -12,6 +12,11 @@
                                    :labels #{:terminology :review}}}
         :operation/in {:source [:step :load :document]}})))
 
+(deftest invocation-id-is-required
+  (is (false?
+       (invocation/valid?
+        {:operation/with {:target-locale :fr}}))))
+
 (deftest runtime-values-cannot-enter-invocation-data
   (testing "provider and handler identity are not fields on the request"
     (is (false?
@@ -24,11 +29,9 @@
           {:operation/id :translation/transduce
            :operation/with {:callback (fn [] :runtime)}})))))
 
-(deftest unsafe-jvm-only-numbers-fail-the-portable-boundary
-  #?(:clj
+#?(:clj
+   (deftest unsafe-jvm-only-numbers-fail-the-portable-boundary
      (is (false?
           (invocation/valid?
            {:operation/id :evaluation/score
-            :operation/with {:weight 9007199254740992}})))
-     :cljs
-     (is true)))
+            :operation/with {:weight 9007199254740992}})))))

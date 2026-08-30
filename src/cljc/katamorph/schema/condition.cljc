@@ -1,12 +1,33 @@
 (ns katamorph.schema.condition)
 
-(def PathSegment
-  [:or keyword? string? int?])
-
 (def max-safe-integer
   "2^53 - 1. Past this a JavaScript number stops representing consecutive
    integers, so a larger integer cannot cross to ClojureScript unchanged."
   9007199254740991)
+
+(defn portable-integer?
+  "True for integer values both CLJ and CLJS can preserve exactly."
+  [x]
+  #?(:clj (cond
+            (integer? x)
+            (<= (- max-safe-integer) x max-safe-integer)
+
+            (instance? Double x)
+            (and (Double/isFinite (double x))
+                 (== x (Math/rint (double x)))
+                 (<= (- max-safe-integer) x max-safe-integer))
+
+            :else false)
+     :cljs (and (number? x)
+                (integer? x)
+                (<= (- max-safe-integer) x max-safe-integer))))
+
+(def PortableInteger
+  [:fn {:error/message "a portable integer is within the JavaScript safe-integer range"}
+   portable-integer?])
+
+(def PathSegment
+  [:or keyword? string? PortableInteger])
 
 (defn portable-number?
   "True for numbers both runtimes hold identically.
@@ -21,11 +42,7 @@
   [x]
   #?(:clj (cond
             (instance? Double x) true
-            (or (instance? Long x)
-                (instance? Integer x)
-                (instance? Short x)
-                (instance? Byte x))
-            (<= (- max-safe-integer) (long x) max-safe-integer)
+            (portable-integer? x) true
             :else false)
      :cljs (number? x)))
 
