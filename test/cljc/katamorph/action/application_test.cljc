@@ -52,6 +52,17 @@
     (is (contains? law-ids :action/application-missing-input))
     (is (contains? law-ids :action/application-undeclared-input))))
 
+(deftest diagnostic-order-is-total-across-port-key-types
+  (let [action (assoc translate :action/requires {})
+        request {:operation/id :translation/transduce
+                 :operation/in (array-map ":source" :string
+                                          :source :keyword)}]
+    (is (= [{:law/id :action/application-undeclared-input
+             :input :source}
+            {:law/id :action/application-undeclared-input
+             :input ":source"}]
+           (:errors (application/validate action request))))))
+
 (deftest configuration-is-not-confused-with-dataflow
   (let [result (application/validate
                 translate

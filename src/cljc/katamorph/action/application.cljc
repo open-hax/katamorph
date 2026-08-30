@@ -10,6 +10,9 @@
 (defn- supplied-inputs [request]
   (set (keys (:operation/in request {}))))
 
+(defn- port-sort-key [port]
+  [(if (keyword? port) 0 1) (str port)])
+
 (defn errors
   "Return structural errors proving whether one InvocationRequest may apply an ActionSemantics contract.
 
@@ -34,10 +37,10 @@
           [{:law/id :action/application-id-mismatch
             :expected expected-id
             :actual actual-id}])
-        (for [port (sort-by str (set/difference required supplied))]
+        (for [port (sort-by port-sort-key (set/difference required supplied))]
           {:law/id :action/application-missing-input
            :input port})
-        (for [port (sort-by str (set/difference supplied required))]
+        (for [port (sort-by port-sort-key (set/difference supplied required))]
           {:law/id :action/application-undeclared-input
            :input port}))))))
 
