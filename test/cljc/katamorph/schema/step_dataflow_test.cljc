@@ -1,10 +1,10 @@
 (ns katamorph.schema.step-dataflow-test
   #?(:clj
-     (:require [clojure.test :refer [deftest is testing]]
+     (:require [clojure.test :refer [deftest is]]
                [katamorph.schema.step :as step]
                [katamorph.schema.validation :as validation])
      :cljs
-     (:require [cljs.test :refer [deftest is testing]]
+     (:require [cljs.test :refer [deftest is]]
                [katamorph.schema.step :as step]
                [katamorph.schema.validation :as validation])))
 
