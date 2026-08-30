@@ -31,7 +31,7 @@
   (is (schema/portable-integer? 1.0)
       "an exact integral double has the same portable value in both runtimes")
   #?(:clj
-     (doseq [value [(byte 1) (short 2) (int 3) (long 4)]]
+     (doseq [value [(byte 1) (short 2) (int 3) (long 4) 5N]]
        (is (schema/portable-integer? value) (pr-str value)))))
 
 (deftest numeric-path-segments-use-the-portable-integer-law

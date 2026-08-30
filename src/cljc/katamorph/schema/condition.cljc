@@ -9,11 +9,8 @@
   "True for integer values both CLJ and CLJS can preserve exactly."
   [x]
   #?(:clj (cond
-            (or (instance? Long x)
-                (instance? Integer x)
-                (instance? Short x)
-                (instance? Byte x))
-            (<= (- max-safe-integer) (long x) max-safe-integer)
+            (integer? x)
+            (<= (- max-safe-integer) x max-safe-integer)
 
             (instance? Double x)
             (and (Double/isFinite (double x))
