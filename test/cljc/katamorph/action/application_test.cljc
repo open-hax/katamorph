@@ -88,12 +88,13 @@
            (mapv :input (:errors (application/validate action request)))))))
 
 (deftest configuration-is-not-confused-with-dataflow
-  (let [result (application/validate
-                translate
-                (assoc valid-request :operation/with
+  (let [request (assoc valid-request :operation/with
                        {:source :configuration-value
-                        :target-locale :fr}))]
-    (is (:ok result))))
+                        :target-locale :fr})
+        result (application/validate translate request)]
+    (is (:ok result))
+    (is (= translate (:action result)))
+    (is (= request (:invocation result)))))
 
 (deftest malformed-boundaries-fail-before-port-analysis
   (testing "invalid action"
