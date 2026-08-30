@@ -39,7 +39,7 @@
            :input port})
         (for [port (sort-by str (set/difference supplied required))]
           {:law/id :action/application-undeclared-input
-           :input port})))))
+           :input port}))))))
 
 (defn validate [action-contract request]
   (let [problems (errors action-contract request)]
