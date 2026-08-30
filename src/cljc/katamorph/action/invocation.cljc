@@ -1,5 +1,6 @@
 (ns katamorph.action.invocation
-  (:require [katamorph.schema.action :as action]
+  (:require [katamorph.action.input :as input]
+            [katamorph.schema.action :as action]
             [katamorph.schema.condition :as condition]
             [malli.core :as m]))
 
@@ -9,13 +10,14 @@
 (def InvocationRequest
   "Portable request to apply one semantic action.
 
-   The :operation/* wire keys are retained for compatibility with existing
-   callers. :operation/id resolves an ActionSemantics contract id; this value
-   contains no provider choice, handler, runtime identity, timestamp, or effect."
+   :operation/with is portable configuration. :operation/in is typed dataflow:
+   reserved reference vectors must satisfy Katamorph's input-reference language;
+   other portable values remain literals. Provider choice, handlers, runtime
+   identity, timestamps, and effects do not belong here."
   [:map {:closed true}
    [:operation/id action/ContractId]
    [:operation/with {:optional true} ArgumentMap]
-   [:operation/in {:optional true} ArgumentMap]])
+   [:operation/in {:optional true} input/InputMap]])
 
 (defn valid? [value]
   (m/validate InvocationRequest value))

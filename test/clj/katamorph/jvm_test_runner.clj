@@ -2,6 +2,7 @@
   (:require [clojure.test :as test]
             [katamorph.action.application-test]
             [katamorph.action.binding-registry-test]
+            [katamorph.action.input-test]
             [katamorph.action.invocation-test]
             [katamorph.action.registry-test]
             [katamorph.condition-test]
@@ -27,6 +28,7 @@
    'katamorph.action.registry-test
    'katamorph.action.binding-registry-test
    'katamorph.action.application-test
+   'katamorph.action.input-test
    'katamorph.action.invocation-test
    'katamorph.schema.step-dataflow-test
    'katamorph.workflow.validation-test
