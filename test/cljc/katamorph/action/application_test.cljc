@@ -77,6 +77,16 @@
        (is (= [shallow nested]
               (mapv :input (:errors (application/validate action request))))))))
 
+(deftest diagnostic-order-distinguishes-keyword-namespace-presence
+  (let [unqualified (keyword "x")
+        empty-namespace (keyword "" "x")
+        action (assoc translate :action/requires {})
+        request {:operation/id :translation/transduce
+                 :operation/in (array-map unqualified :unqualified
+                                          empty-namespace :empty)}]
+    (is (= [empty-namespace unqualified]
+           (mapv :input (:errors (application/validate action request)))))))
+
 (deftest configuration-is-not-confused-with-dataflow
   (let [result (application/validate
                 translate

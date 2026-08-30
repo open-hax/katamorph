@@ -12,8 +12,9 @@
 
 (defn- port-sort-key [port]
   (if (keyword? port)
-    [0 (or (namespace port) "") (name port)]
-    [1 "" port]))
+    (let [ns-part (namespace port)]
+      [0 (str port) (if (nil? ns-part) 0 1) (or ns-part "") (name port)])
+    [1 port 0 "" ""]))
 
 (defn errors
   "Return structural errors proving whether one InvocationRequest may apply an ActionSemantics contract.
