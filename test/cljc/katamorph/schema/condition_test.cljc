@@ -11,12 +11,38 @@
    :condition/path [:n]
    :condition/value value})
 
+(defn- exists-at [segment]
+  {:condition/op :exists
+   :condition/path [segment]})
+
 (deftest doubles-and-safe-integers-are-portable
   (is (schema/portable-number? 0))
   (is (schema/portable-number? -42))
   (is (schema/portable-number? 3.14))
   (is (schema/portable-number? schema/max-safe-integer))
   (is (schema/portable-number? (- schema/max-safe-integer))))
+
+(deftest portable-integer-boundary-is-exact
+  (is (schema/portable-integer? 0))
+  (is (schema/portable-integer? schema/max-safe-integer))
+  (is (schema/portable-integer? (- schema/max-safe-integer)))
+  (is (not (schema/portable-integer? (inc schema/max-safe-integer))))
+  (is (not (schema/portable-integer? (dec (- schema/max-safe-integer)))))
+  (is (schema/portable-integer? 1.0)
+      "an exact integral double has the same portable value in both runtimes")
+  #?(:clj
+     (doseq [value [(byte 1) (short 2) (int 3) (long 4) 5N]]
+       (is (schema/portable-integer? value) (pr-str value)))))
+
+(deftest numeric-path-segments-use-the-portable-integer-law
+  (is (condition/condition? (exists-at schema/max-safe-integer)))
+  (is (condition/condition? (exists-at (- schema/max-safe-integer))))
+  (is (not (condition/condition? (exists-at (inc schema/max-safe-integer)))))
+  (is (condition/condition? (exists-at 1.0))))
+
+(deftest keyword-and-string-path-segments-remain-lawful
+  (is (condition/condition? {:condition/op :exists
+                             :condition/path [:artifact "status"]})))
 
 (deftest non-numbers-are-not-numbers
   (is (not (schema/portable-number? "42")))
