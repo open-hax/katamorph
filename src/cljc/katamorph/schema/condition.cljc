@@ -18,7 +18,7 @@
                 (<= (- max-safe-integer) x max-safe-integer))))
 
 (def PortableInteger
-  [:fn {:error/message (str "a portable integer is within the JavaScript safe-integer range")}
+  [:fn {:error/message "a portable integer is within the JavaScript safe-integer range"}
    portable-integer?])
 
 (def PathSegment

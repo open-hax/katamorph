@@ -1,8 +1,8 @@
 (ns katamorph.schema.condition-test
-  #?(:clj (:require [clojure.test :refer [deftest is testing]]
+  #?(:clj (:require [clojure.test :refer [deftest is]]
                     [katamorph.condition :as condition]
                     [katamorph.schema.condition :as schema])
-     :cljs (:require [cljs.test :refer [deftest is testing]]
+     :cljs (:require [cljs.test :refer [deftest is]]
                      [katamorph.condition :as condition]
                      [katamorph.schema.condition :as schema])))
 
