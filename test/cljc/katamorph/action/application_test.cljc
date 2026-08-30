@@ -63,6 +63,17 @@
              :input ":source"}]
            (:errors (application/validate action request))))))
 
+(deftest diagnostic-order-distinguishes-keyword-components
+  (let [shallow (keyword "a" "b/c")
+        nested (keyword "a/b" "c")
+        action (assoc translate :action/requires {})
+        request {:operation/id :translation/transduce
+                 :operation/in (array-map shallow :shallow
+                                          nested :nested)}]
+    ;; Both keywords print as :a/b/c, but namespace/name remain distinct.
+    (is (= [shallow nested]
+           (mapv :input (:errors (application/validate action request)))))))
+
 (deftest configuration-is-not-confused-with-dataflow
   (let [result (application/validate
                 translate

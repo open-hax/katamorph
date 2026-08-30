@@ -11,7 +11,9 @@
   (set (keys (:operation/in request {}))))
 
 (defn- port-sort-key [port]
-  [(if (keyword? port) 0 1) (str port)])
+  (if (keyword? port)
+    [0 (or (namespace port) "") (name port)]
+    [1 "" port]))
 
 (defn errors
   "Return structural errors proving whether one InvocationRequest may apply an ActionSemantics contract.
