@@ -1,0 +1,8 @@
+flowchart LR
+  Action[ActionSemantics] --> Apply[Validate application]
+  Request[InvocationRequest] --> Apply
+  Apply -->|same action id| Ports[Compare input port names]
+  Ports -->|all required, no extras| Valid[Lawful application]
+  Ports -->|missing or undeclared| Finding[Structural finding]
+  Apply -->|identity mismatch| Finding
+  Config[operation/with configuration] -. not dataflow .-> Request
