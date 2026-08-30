@@ -1,8 +1,9 @@
-(ns katamorph.condition.path)
+(ns katamorph.condition.path
+  (:require [katamorph.schema.condition :as schema]))
 
 (defn valid-path? [path]
   (and (vector? path)
-       (every? #(or (keyword? %) (string? %) (integer? %)) path)))
+       (every? #(or (keyword? %) (string? %) (schema/portable-integer? %)) path)))
 
 (defn value-at [context path]
   (if-not (valid-path? path)
@@ -18,10 +19,10 @@
               {:found? false})
 
             (vector? current)
-            (if (and (integer? segment)
+            (if (and (schema/portable-integer? segment)
                      (<= 0 segment)
                      (< segment (count current)))
-              (recur (nth current segment) (next segments))
+              (recur (nth current (int segment)) (next segments))
               {:found? false})
 
             :else {:found? false}))))))

@@ -8,11 +8,19 @@
 (defn portable-integer?
   "True for integer values both CLJ and CLJS can preserve exactly."
   [x]
-  #?(:clj (and (or (instance? Long x)
-                    (instance? Integer x)
-                    (instance? Short x)
-                    (instance? Byte x))
-                (<= (- max-safe-integer) (long x) max-safe-integer))
+  #?(:clj (cond
+            (or (instance? Long x)
+                (instance? Integer x)
+                (instance? Short x)
+                (instance? Byte x))
+            (<= (- max-safe-integer) (long x) max-safe-integer)
+
+            (instance? Double x)
+            (and (Double/isFinite (double x))
+                 (== x (Math/rint (double x)))
+                 (<= (- max-safe-integer) x max-safe-integer))
+
+            :else false)
      :cljs (and (number? x)
                 (integer? x)
                 (<= (- max-safe-integer) x max-safe-integer))))
