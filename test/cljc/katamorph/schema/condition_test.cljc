@@ -28,14 +28,21 @@
   (is (schema/portable-integer? (- schema/max-safe-integer)))
   (is (not (schema/portable-integer? (inc schema/max-safe-integer))))
   (is (not (schema/portable-integer? (dec (- schema/max-safe-integer)))))
-  (is (not (schema/portable-integer? 1.0))
-      "integer-valued doubles remain numbers, not path-index integers"))
+  #?(:clj
+     (is (not (schema/portable-integer? 1.0))
+         "the JVM preserves the distinction between a double and an integer")
+     :cljs
+     (is (schema/portable-integer? 1.0)
+         "JavaScript has one numeric type, so an exact integral number is an integer")))
 
 (deftest numeric-path-segments-use-the-portable-integer-law
   (is (condition/condition? (exists-at schema/max-safe-integer)))
   (is (condition/condition? (exists-at (- schema/max-safe-integer))))
   (is (not (condition/condition? (exists-at (inc schema/max-safe-integer)))))
-  (is (not (condition/condition? (exists-at 1.0)))))
+  #?(:clj
+     (is (not (condition/condition? (exists-at 1.0))))
+     :cljs
+     (is (condition/condition? (exists-at 1.0)))))
 
 (deftest keyword-and-string-path-segments-remain-lawful
   (is (condition/condition? {:condition/op :exists
