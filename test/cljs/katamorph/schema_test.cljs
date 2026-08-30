@@ -308,14 +308,19 @@
                                      :action/handler "dispatch"}))
       "the port vocabulary is opt-in; knoxx heritage actions declare none"))
 
-(deftest registered-workflow-enforces-step-dataflow
+(deftest registered-workflow-enforces-portable-step-input-shapes
   (let [with-step-in (fn [in]
                        (assoc-in minimal-workflow
                                  [:workflow/jobs 0 :job/steps 0 :step/in] in))]
     (is (:ok (schema/validate :workflow
                               (with-step-in {:candidate [:step :translate :candidate]}))))
+    (is (:ok (schema/validate :workflow
+                              (with-step-in {:candidate [:translate :candidate]})))
+        "an unreserved portable vector is an ordinary literal")
+    (is (:ok (schema/validate :workflow (with-step-in {:candidate "translate"})))
+        "a portable string is an ordinary literal")
     (is (not (:ok (schema/validate :workflow
-                                   (with-step-in {:candidate [:translate :candidate]}))))
-        "a bare pair is not a step reference and must not pass as dataflow")
-    (is (not (:ok (schema/validate :workflow (with-step-in {:candidate "translate"}))))
-        "a string names no output of any step")))
+                                   (with-step-in {:candidate [:step :translate]}))))
+        "a reserved step-reference vector must satisfy its exact shape")
+    (is (not (:ok (schema/validate :workflow (with-step-in {:candidate [:event]}))))
+        "other malformed reserved references fail closed")))
