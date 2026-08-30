@@ -8,7 +8,7 @@
        (mapcat
         (fn [value]
           (cond-> []
-            (nil? (actions/resolve-action action-registry (:binding/action value)))
+            (not (actions/resolve-action action-registry (:binding/action value)))
             (conj {:law/id :binding/unknown-action
                    :binding/id (:binding/id value)
                    :action/id (:binding/action value)})
@@ -34,7 +34,7 @@
     (cond
       (not (:ok bound)) bound
 
-      (nil? (actions/resolve-action action-registry action-id))
+      (not (actions/resolve-action action-registry action-id))
       {:ok false
        :registry registry
        :errors [{:law/id :binding/unknown-action

@@ -80,7 +80,14 @@
                                   {:render/local local-render})]
         (is (false? (:ok result)))
         (is (= :binding/unknown-provider
-               (-> result :errors first :law/id)))))))
+               (-> result :errors first :law/id))))))
+  (testing "falsey action entries do not resolve"
+    (let [result (registry/bind {:render/html false}
+                                providers
+                                {:render/local local-render})]
+      (is (false? (:ok result)))
+      (is (= :binding/unknown-action
+             (-> result :errors first :law/id))))))
 
 (deftest provider-candidates-are-deterministic-and-do-not-select
   (let [bindings {:render/local local-render
@@ -107,7 +114,16 @@
     (is (false? (:ok result)))
     (is (= [{:law/id :binding/unknown-action
              :action/id :missing/action}]
-           (:errors result)))))
+           (:errors result))))
+  (doseq [action-value [nil false]]
+    (let [result (registry/providers-for {:render/html action-value}
+                                         providers
+                                         {}
+                                         :render/html)]
+      (is (false? (:ok result)))
+      (is (= [{:law/id :binding/unknown-action
+               :action/id :render/html}]
+             (:errors result))))))
 
 (deftest candidate-order-is-total-across-contract-id-types
   (let [keyword-binding local-render
