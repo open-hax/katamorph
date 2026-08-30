@@ -12,7 +12,7 @@
             (conj {:law/id :binding/unknown-action
                    :binding/id (:binding/id value)
                    :action/id (:binding/action value)})
-            (not (contains? provider-registry (:binding/provider value)))
+            (not (get provider-registry (:binding/provider value)))
             (conj {:law/id :binding/unknown-provider
                    :binding/id (:binding/id value)
                    :provider/id (:binding/provider value)}))))

@@ -72,7 +72,15 @@
                                              :binding/provider :provider/missing)})]
       (is (false? (:ok result)))
       (is (= :binding/unknown-provider
-             (-> result :errors first :law/id))))))
+             (-> result :errors first :law/id)))))
+  (testing "falsey provider entries do not resolve"
+    (doseq [provider-value [nil false]]
+      (let [result (registry/bind actions
+                                  {:provider/local provider-value}
+                                  {:render/local local-render})]
+        (is (false? (:ok result)))
+        (is (= :binding/unknown-provider
+               (-> result :errors first :law/id)))))))
 
 (deftest provider-candidates-are-deterministic-and-do-not-select
   (let [bindings {:render/local local-render
