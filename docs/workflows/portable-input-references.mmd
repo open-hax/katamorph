@@ -1,5 +1,7 @@
 flowchart LR
-  Input[operation/in value] --> Reserved{Reserved vector head?}
+  Direct[operation/in value] --> Input[Portable InputValue]
+  StepIn[step/in value] --> Input
+  Input --> Reserved{Reserved vector head?}
   Reserved -->|no| Literal[Portable literal]
   Reserved -->|yes| Ref[Validate typed reference]
   Ref --> Step[step output]
@@ -10,3 +12,4 @@ flowchart LR
   Ref --> Explicit[explicit literal wrapper]
   Ref -->|malformed| Finding[Structural finding]
   Config[operation/with] -. plain PortableValue .-> Literal
+  Wire[Workflow wire validation] -. may reject unresolved source kinds .-> Ref
