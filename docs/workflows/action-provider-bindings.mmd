@@ -1,0 +1,12 @@
+flowchart LR
+  Action[Portable ActionSemantics]
+  Binding[ActionBinding]
+  Providers[Host provider registry]
+  Validate[Katamorph reference integrity]
+  Candidates[Deterministic provider candidates]
+  Policy[Runtime / policy chooses provider]
+
+  Action --> Validate
+  Binding --> Validate
+  Providers --> Validate
+  Validate --> Candidates --> Policy
