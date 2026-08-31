@@ -1,0 +1,56 @@
+name: katamorph-ci
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: lint, test, examples, and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Clojure CLI and clj-kondo
+        uses: DeLaGuardo/setup-clojure@13
+        with:
+          cli: latest
+          clj-kondo: latest
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked JavaScript dependencies
+        run: npm ci
+
+      - name: Lint ClojureScript
+        run: npm run lint:kondo
+
+      - name: Run law and schema tests
+        run: npm test
+
+      - name: Validate and execute examples
+        run: npm run examples
+
+      - name: Build the ESM library
+        run: npm run build
