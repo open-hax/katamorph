@@ -1,0 +1,62 @@
+{:namespace :open-hax.github
+ :resources
+ [{:actor/id "event-indexer"
+   :actor/kind :agent
+   :actor/label "OpenHax GitHub event indexer"
+   :actor/roles [:provider-observer]
+   :actor/capabilities [:github/discover
+                        :github/hydrate
+                        :github/reconcile
+                        :event-ledger/append]}
+
+  {:source/id :app-events
+   :source/type :event
+   :source/name "GitHub App webhook and reconciliation source"
+   :source/enabled? true
+   :source/driver :github/app
+   :source/provider :github
+   :source/actor :open-hax.github/event-indexer
+   :source/listens [{:event/type :github/webhook
+                     :description "Verified GitHub App delivery signal"}]
+   :source/emits [{:event/type :github/delivery-received
+                   :description "Raw verified delivery admitted before hydration"}
+                  {:event/type :github/object-observed
+                   :description "Hydrated GitHub object observation"}
+                  {:event/type :github/coverage-observed
+                   :description "Permission, rate-limit, and reconciliation coverage"}]
+   :source/protocol {:delivery :at-least-once
+                     :signal-id :github/delivery-id
+                     :object-id :github/node-id
+                     :checkpoint :github/delivery-cursor
+                     :reconcile :github/deliveries-and-api
+                     :completeness :explicit}
+   :source/tools [:github/discover
+                  :github/hydrate
+                  :github/reconcile]}
+
+  {:store/id :event-ledger
+   :store/schema
+   [:map {:closed false}
+    [:record/id :string]
+    [:stream/id :string]
+    [:stream/position {:optional true} :int]
+    [:event/id :string]
+    [:event/kind :keyword]
+    [:event/observed-at :string]
+    [:source/provider [:= :github]]
+    [:source/object-id {:optional true} :string]
+    [:payload [:map {:closed false}]]]
+   :enabled true}
+
+  {:action/id :hydrate-object
+   :action/kind :github/hydrate-object
+   :action/with {:source :open-hax.github/app-events
+                 :store :open-hax.github/event-ledger}
+   :enabled true}
+
+  {:action/id :reconcile-installation
+   :action/kind :github/reconcile-installation
+   :action/with {:source :open-hax.github/app-events
+                 :store :open-hax.github/event-ledger
+                 :coverage :explicit}
+   :enabled true}]}

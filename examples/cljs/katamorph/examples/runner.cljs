@@ -8,7 +8,8 @@
 
 (def example-paths
   ["examples/hello-world.edn"
-   "examples/host-runtime.edn"])
+   "examples/host-runtime.edn"
+   "examples/github-interaction.edn"])
 
 (defn read-example
   [path]
