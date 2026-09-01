@@ -4,11 +4,15 @@
             [katamorph.manifest :as manifest]
             [katamorph.store.protocol :as store]
             [katamorph.store.registry :as store-registry]
-            ["node:fs" :as fs]))
+            ["node:fs" :as fs]
+            ["node:path" :as path]))
+
+(def github-interaction-path
+  (.resolve path js/__dirname ".." "examples" "github-interaction.edn"))
 
 (defn- resource-definitions
   []
-  (-> (.readFileSync fs "examples/github-interaction.edn" "utf8")
+  (-> (.readFileSync fs github-interaction-path "utf8")
       reader/read-string
       manifest/namespace-file-definitions))
 
