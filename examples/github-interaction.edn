@@ -35,7 +35,17 @@
                   :github/reconcile]}
 
   {:store/id :event-ledger
-   :store/schema :clio/event-record-v1
+   :store/schema
+   [:map {:closed false}
+    [:record/id :string]
+    [:stream/id :string]
+    [:stream/position {:optional true} :int]
+    [:event/id :string]
+    [:event/kind :keyword]
+    [:event/observed-at :string]
+    [:source/provider [:= :github]]
+    [:source/object-id {:optional true} :string]
+    [:payload [:map {:closed false}]]]
    :enabled true}
 
   {:action/id :hydrate-object
