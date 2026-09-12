@@ -1,0 +1,15 @@
+{
+  "id": "katamorph-main-warning-jvm",
+  "cwd": "/tmp/foresight-restore-katamorph",
+  "argv": [
+    "clojure",
+    "-M:test-jvm"
+  ],
+  "start": "2026-09-12T08:49:34.451Z",
+  "end": "2026-09-12T08:49:38.513Z",
+  "seconds": 4.063,
+  "code": 0,
+  "signal": null,
+  "timeout": false,
+  "log": "/workspace/scratch/3655842e43cf/evidence/logs/katamorph-main-warning-jvm.log"
+}

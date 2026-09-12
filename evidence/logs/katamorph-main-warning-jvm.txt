@@ -1,0 +1,37 @@
+Picked up JAVA_TOOL_OPTIONS: -Duser.home=/workspace/scratch/3655842e43cf/toolchain/jvm-home -Djavax.net.ssl.trustStore=/workspace/scratch/3655842e43cf/toolchain/cacerts -Djavax.net.ssl.trustStorePassword=changeit -XX:ActiveProcessorCount=4 -Xmx2g -Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=42475 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=42475 -Dhttp.nonProxyHosts=localhost|127.*|0.0.0.0|[::1]
+Picked up JAVA_TOOL_OPTIONS: -Duser.home=/workspace/scratch/3655842e43cf/toolchain/jvm-home -Djavax.net.ssl.trustStore=/workspace/scratch/3655842e43cf/toolchain/cacerts -Djavax.net.ssl.trustStorePassword=changeit -XX:ActiveProcessorCount=4 -Xmx2g -Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=42475 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=42475 -Dhttp.nonProxyHosts=localhost|127.*|0.0.0.0|[::1]
+
+Testing katamorph.condition-test
+
+Testing katamorph.condition.path-test
+
+Testing katamorph.schema.condition-test
+
+Testing katamorph.schema.registry-test
+
+Testing katamorph.schema.validation-test
+
+Testing katamorph.schema.relation-test
+
+Testing katamorph.schema.action-semantics-test
+
+Testing katamorph.action.registry-test
+
+Testing katamorph.action.binding-registry-test
+
+Testing katamorph.action.application-test
+
+Testing katamorph.action.input-test
+
+Testing katamorph.action.invocation-test
+
+Testing katamorph.schema.step-dataflow-test
+
+Testing katamorph.workflow.validation-test
+
+Testing katamorph.workflow.graph-test
+
+Testing katamorph.workflow.cycle-validation-test
+
+Ran 91 tests containing 348 assertions.
+0 failures, 0 errors.

@@ -1,0 +1,15 @@
+{
+  "id": "katamorph-review-verify",
+  "cwd": "/tmp/foresight-restore-katamorph",
+  "argv": [
+    "pnpm",
+    "verify"
+  ],
+  "start": "2026-09-12T09:22:33.157Z",
+  "end": "2026-09-12T09:23:09.109Z",
+  "seconds": 35.952,
+  "code": 0,
+  "signal": null,
+  "timeout": false,
+  "log": "/workspace/scratch/3655842e43cf/evidence/logs/katamorph-review-verify.log"
+}

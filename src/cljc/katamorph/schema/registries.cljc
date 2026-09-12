@@ -1,4 +1,4 @@
-(ns katamorph.schema.registry
+(ns katamorph.schema.registries
   (:require [katamorph.schema.kind :as kind]))
 
 (defn- normalized-entries [registry]

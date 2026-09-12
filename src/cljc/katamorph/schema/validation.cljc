@@ -2,7 +2,7 @@
   (:require [malli.core :as m]
             [malli.error :as me]
             [katamorph.schema.kind :as kind]
-            [katamorph.schema.registry :as registry]))
+            [katamorph.schema.registries :as registry]))
 
 (defn- collect-humanized-errors [prefix value]
   (cond
