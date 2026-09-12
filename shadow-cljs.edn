@@ -6,7 +6,8 @@
    ;; .cjs so node runs it as CommonJS under this package's "type":"module".
    :output-to "dist/test.cjs"
    :ns-regexp "-test$"
-   :autorun false}
+   :autorun false
+   :compiler-options {:warnings-as-errors true}}
 
   :examples
   {:target :node-script

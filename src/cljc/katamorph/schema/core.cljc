@@ -1,7 +1,7 @@
 (ns katamorph.schema.core
   "Portable schema mechanics. Domain registries and kind inference stay outside."
   (:require [katamorph.schema.kind :as kind]
-            [katamorph.schema.registry :as registry]
+            [katamorph.schema.registries :as registry]
             [katamorph.schema.validation :as validation]))
 
 (def normalize-kind kind/normalize-kind)
