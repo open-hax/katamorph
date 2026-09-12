@@ -1,0 +1,7 @@
+{"baselineExit": 127, "pnpmAvailable": false, "baselineError": "sh: 1: pnpm: not found"}
+
+> @open-hax/katamorph@0.2.0 lint:kondo
+> clj-kondo --lint src test examples/cljs
+
+linting took 360ms, errors: 0, warnings: 0
+{"currentExit": 0, "pnpmAvailable": false, "portableLint": "0errors/0warnings"}

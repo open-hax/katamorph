@@ -1,0 +1,15 @@
+{
+  "id": "katamorph-review-no-pnpm",
+  "cwd": "/tmp/foresight-restore-katamorph",
+  "argv": [
+    "python",
+    "/workspace/scratch/3655842e43cf/evidence/katamorph-npm-path-proof.py"
+  ],
+  "start": "2026-09-12T09:22:11.847Z",
+  "end": "2026-09-12T09:22:12.525Z",
+  "seconds": 0.678,
+  "code": 0,
+  "signal": null,
+  "timeout": false,
+  "log": "/workspace/scratch/3655842e43cf/evidence/logs/katamorph-review-no-pnpm.log"
+}

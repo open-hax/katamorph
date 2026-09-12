@@ -1,0 +1,16 @@
+{
+  "id": "katamorph-review-npm-lint",
+  "cwd": "/tmp/foresight-restore-katamorph",
+  "argv": [
+    "npm",
+    "run",
+    "lint:kondo"
+  ],
+  "start": "2026-09-12T09:21:20.547Z",
+  "end": "2026-09-12T09:21:21.155Z",
+  "seconds": 0.608,
+  "code": 0,
+  "signal": null,
+  "timeout": false,
+  "log": "/workspace/scratch/3655842e43cf/evidence/logs/katamorph-review-npm-lint.log"
+}

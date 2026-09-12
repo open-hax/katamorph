@@ -1,0 +1,5 @@
+
+> @open-hax/katamorph@0.2.0 lint:kondo
+> clj-kondo --lint src test examples/cljs
+
+linting took 334ms, errors: 0, warnings: 0

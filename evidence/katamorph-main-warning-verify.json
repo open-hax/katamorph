@@ -1,0 +1,15 @@
+{
+  "id": "katamorph-main-warning-verify",
+  "cwd": "/tmp/foresight-restore-katamorph",
+  "argv": [
+    "pnpm",
+    "verify"
+  ],
+  "start": "2026-09-12T08:49:34.455Z",
+  "end": "2026-09-12T08:50:35.572Z",
+  "seconds": 61.117,
+  "code": 0,
+  "signal": null,
+  "timeout": false,
+  "log": "/workspace/scratch/3655842e43cf/evidence/logs/katamorph-main-warning-verify.log"
+}
