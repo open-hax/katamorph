@@ -18,3 +18,13 @@
   spore: none
   receipt-refs: ".\u03b7\u03bc/receipts.edn#sha256:024a5c8e3879b94f49beb36103f95ca21940c0988dc80726f5cd0a533355bf2c"
   note: "No allocation without an explicit native access-denial diagnostic remains UNKNOWN. Preserve native API evidence, cancel the owned pending run, and remove only the temporary probe source."
+
+- ts: 2026-10-23T08:39:57.161422Z
+  session: codex/foresight-antigravity-rollout
+  task: Publish katamorph R4 caller and incoming planning clarification
+  p-efficiency: 0.95
+  p-friction: 0.05
+  p-skill-candidate: 0.0
+  spore: none
+  receipt-refs: 053778376cccde83c578f7d2abe18fcd13a1cf974abc8d12d9158adc6a6595fb
+  note: "Keep runtime pins in generated callers; preserve incoming frontmatter and append-only accountability. Shared service proof and member exact-head hosted proof remain distinct."
